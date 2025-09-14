@@ -75,13 +75,12 @@ export const Providers = () => {
         <div className="grid items-center justify-center py-8">
           <div className="px-5">
             <h2 className="mt-6 mb-5 text-center font-medium text-3xl tracking-[-0.12rem] sm:text-4xl md:text-5xl">
-              Powered by the world's leading AI providers
+              Поддержка ведущих AI‑провайдеров
             </h2>
 
             <p className="mx-auto max-w-lg text-center text-muted-foreground tracking-[-0.01rem] sm:text-lg">
-              Connect your workflows to {allModels.length} models from{' '}
-              {Object.keys(providers).length} of the world's top AI providers,
-              including OpenAI, Anthropic, and more.
+              Подключайте {allModels.length} моделей от {Object.keys(providers).length} провайдеров,
+              включая OpenAI, Anthropic и других.
             </p>
           </div>
 

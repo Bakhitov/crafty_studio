@@ -17,7 +17,7 @@ export const download = (
 
   const link = document.createElement('a');
   const extension = data.type.split('/').at(-1) ?? defaultExtension;
-  const filename = `tersa-${id}.${extension}`;
+  const filename = `crafty-${id}.${extension}`;
 
   // Create a blob URL from the data URL
   fetch(data.url)

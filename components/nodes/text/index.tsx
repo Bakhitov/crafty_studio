@@ -29,5 +29,5 @@ export const TextNode = (props: TextNodeProps) => {
   });
   const Component = connections.length ? TextTransform : TextPrimitive;
 
-  return <Component {...props} title="Text" />;
+  return <Component {...props} title="Prompt" />;
 };

@@ -1,14 +1,14 @@
 import { openai } from '@ai-sdk/openai';
 import type { LanguageModelV2 } from '@ai-sdk/provider';
-import { type TersaModel, type TersaProvider, providers } from '../providers';
+import { type CraftyModel, type CraftyProvider, providers } from '../providers';
 
-type TersaVisionModel = TersaModel & {
-  providers: (TersaProvider & {
+type CraftyVisionModel = CraftyModel & {
+  providers: (CraftyProvider & {
     model: LanguageModelV2;
   })[];
 };
 
-export const visionModels: Record<string, TersaVisionModel> = {
+export const visionModels: Record<string, CraftyVisionModel> = {
   'openai-gpt-4.1': {
     label: 'GPT-4.1',
     chef: providers.openai,

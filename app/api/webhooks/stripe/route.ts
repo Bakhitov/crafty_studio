@@ -2,12 +2,16 @@ import { database } from '@/lib/database';
 import { env } from '@/lib/env';
 import { parseError } from '@/lib/error/parse';
 import { stripe } from '@/lib/stripe';
+import { isManualBilling } from '@/lib/billing';
 import { profile } from '@/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 
 export async function POST(req: Request) {
+  if (isManualBilling()) {
+    return new NextResponse('Биллинг отключён (ручной режим)', { status: 404 });
+  }
   const body = await req.text();
   const signature = req.headers.get('stripe-signature') as string;
 
@@ -38,14 +42,14 @@ export async function POST(req: Request) {
             : subscription.customer.id;
 
         if (!subscription.metadata.userId) {
-          throw new Error('User ID not found');
+          throw new Error('ID пользователя не найден');
         }
 
         // Get customer to find the user ID
         const customer = await stripe.customers.retrieve(customerId);
 
         if (customer.deleted) {
-          throw new Error('Customer is deleted');
+          throw new Error('Клиент удалён');
         }
 
         // If the customer has changed plan, we need to cancel the old subscription
@@ -78,7 +82,7 @@ export async function POST(req: Request) {
         const subscription = event.data.object as Stripe.Subscription;
 
         if (!subscription.metadata.userId) {
-          throw new Error('User ID not found');
+          throw new Error('ID пользователя не найден');
         }
 
         const userProfile = await database.query.profile.findFirst({
@@ -86,7 +90,7 @@ export async function POST(req: Request) {
         });
 
         if (!userProfile) {
-          throw new Error('Profile not found');
+          throw new Error('Профиль не найден');
         }
 
         if (userProfile.subscriptionId === subscription.id) {

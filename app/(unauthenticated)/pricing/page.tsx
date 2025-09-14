@@ -1,11 +1,12 @@
 import { currentUser, currentUserProfile } from '@/lib/auth';
 import { env } from '@/lib/env';
+import { isManualBilling } from '@/lib/billing';
 import type { Metadata } from 'next';
 import { Hero } from './components/hero';
 
 export const metadata: Metadata = {
-  title: 'Tersa | Pricing',
-  description: 'Choose a plan to get access to all features.',
+  title: 'Crafty studio | Тарифы',
+  description: 'Выберите план для доступа ко всем функциям.',
 };
 
 const PricingPage = async () => {
@@ -24,7 +25,14 @@ const PricingPage = async () => {
     }
   }
 
-  return <Hero currentPlan={currentPlan} authenticated={Boolean(user)} />;
+  const manualBilling = isManualBilling();
+  return (
+    <Hero
+      currentPlan={currentPlan}
+      authenticated={Boolean(user)}
+      manualBilling={manualBilling}
+    />
+  );
 };
 
 export default PricingPage;

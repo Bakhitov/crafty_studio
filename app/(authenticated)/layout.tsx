@@ -1,5 +1,6 @@
 import { currentUser, currentUserProfile } from '@/lib/auth';
 import { env } from '@/lib/env';
+import { getManualPlan, isManualBilling } from '@/lib/billing';
 import { GatewayProvider } from '@/providers/gateway';
 import { PostHogIdentifyProvider } from '@/providers/posthog-provider';
 import {
@@ -33,6 +34,12 @@ const AuthenticatedLayout = async ({ children }: AuthenticatedLayoutProps) => {
     plan = 'hobby';
   } else if (profile.productId === env.STRIPE_PRO_PRODUCT_ID) {
     plan = 'pro';
+  }
+
+  if (!plan && isManualBilling()) {
+    const manualPlan = await getManualPlan(profile.id);
+    if (manualPlan === 'hobby') plan = 'hobby';
+    if (manualPlan === 'pro') plan = 'pro';
   }
 
   return (

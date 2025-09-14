@@ -19,151 +19,161 @@ import {
   FlowerIcon,
   LeafIcon,
   LifeBuoyIcon,
-  LockIcon,
   type LucideIcon,
   UserIcon,
   UsersIcon,
   XIcon,
 } from 'lucide-react';
 import Link from 'next/link';
-import { type ComponentProps, type ReactNode, useMemo, useState } from 'react';
+import { type ComponentProps, type ReactNode, type ComponentType, useMemo, useState } from 'react';
+import { HiOutlineCode } from "react-icons/hi";
 
 type HeroProps = {
   currentPlan?: 'hobby' | 'pro' | undefined;
   authenticated: boolean;
+  manualBilling?: boolean;
 };
 
+type IconLike = ComponentType<{ size?: number; className?: string }>;
+
 type Plan = {
-  icon: LucideIcon;
+  icon: IconLike;
   name: string;
   description: string;
   monthlyPrice: number;
   yearlyPrice: number;
   features: {
     label: ReactNode;
-    icon: LucideIcon;
+    icon: IconLike;
   }[];
   ctaLink: string;
   ctaText: string;
   variant: ComponentProps<typeof Button>['variant'];
 };
 
-export const Hero = ({ currentPlan, authenticated }: HeroProps) => {
+export const Hero = ({ currentPlan, authenticated, manualBilling }: HeroProps) => {
   const [yearly, setYearly] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   const plans = useMemo(() => {
     const free: Plan = {
       icon: LeafIcon,
-      name: 'Hobby',
-      description: 'For personal use and testing.',
+      name: 'Хобби',
+      description: 'Для личного использования и тестирования.',
       monthlyPrice: 0,
       yearlyPrice: 0,
       features: [
         {
-          label: '200 credits / month',
+          label: '200 кредитов / месяц',
           icon: CoinsIcon,
         },
         {
-          label: 'Basic AI models',
+          label: 'Базовые AI модели',
           icon: BrainIcon,
         },
         {
-          label: 'General support',
+          label: 'Общая поддержка',
           icon: LifeBuoyIcon,
         },
         {
-          label: 'Single user',
+          label: 'Один пользователь',
           icon: UserIcon,
         },
       ],
       ctaLink: '/auth/sign-up',
-      ctaText: 'Get Started',
+      ctaText: 'Начать',
       variant: 'outline',
     };
 
     const pro: Plan = {
       icon: FlowerIcon,
-      name: 'Pro',
-      description: 'For professional use or small teams.',
-      monthlyPrice: 10,
-      yearlyPrice: 8,
+      name: 'Про',
+      description: 'Для профессионального использования или небольших команд.',
+      monthlyPrice: 100,
+      yearlyPrice: 80,
       features: [
         {
-          label: '1600 credits / month',
+          label: '2000 кредитов / месяц',
           icon: CoinsIcon,
         },
         {
-          label: 'All AI models',
+          label: 'Все AI модели',
           icon: BrainIcon,
         },
         {
-          label: 'Priority support',
+          label: 'Приоритетная тех.поддержка',
           icon: LifeBuoyIcon,
         },
         {
           label: (
             <>
-              Live collaboration <Badge variant="secondary">Coming soon</Badge>
+              Выделенный менеджер <Badge variant="secondary">консультация</Badge>
             </>
           ),
           icon: UsersIcon,
         },
       ],
       variant: 'outline',
-      ctaLink: '/auth/sign-up',
-      ctaText: 'Get Started',
+      ctaLink: '#pro',
+      ctaText: 'Связаться',
     };
 
     const enterprise: Plan = {
       icon: Flower2Icon,
-      name: 'Enterprise',
-      description: 'For large teams or enterprise use.',
+      name: 'Корпоративный',
+      description: 'Для больших команд или корпоративного использования.',
       monthlyPrice: -1,
       yearlyPrice: -1,
       features: [
         {
-          label: 'Unlimited credits',
+          label: 'Неограниченные кредиты',
           icon: CoinsIcon,
         },
         {
-          label: 'Custom AI models',
+          label: 'Пользовательские AI модели',
           icon: BrainIcon,
         },
         {
-          label: 'Dedicated support',
+          label: 'Персональная тех.поддержка',
           icon: LifeBuoyIcon,
         },
         {
-          label: 'Custom authentication',
-          icon: LockIcon,
+          label: 'Разработка под клиента',
+          icon: HiOutlineCode,
         },
       ],
-      ctaLink: 'https://x.com/haydenbleasel',
-      ctaText: 'Get in Touch',
+      ctaLink: '#enterprise',
+      ctaText: 'Связаться',
       variant: 'outline',
     };
 
-    if (authenticated) {
+    if (authenticated && !manualBilling) {
       free.ctaLink = `/api/checkout?product=hobby&frequency=${yearly ? 'year' : 'month'}`;
       pro.ctaLink = `/api/checkout?product=pro&frequency=${yearly ? 'year' : 'month'}`;
     }
+    if (authenticated && manualBilling) {
+      free.ctaLink = `/api/admin/billing?claim=hobby`;
+    }
+    if (!authenticated) {
+      free.ctaLink = '/auth/sign-up?next=/pricing';
+    }
 
     if (currentPlan === 'hobby') {
-      free.ctaText = 'Manage';
-      pro.ctaText = 'Upgrade';
+      free.ctaText = 'Управлять';
+      pro.ctaText = 'Обновить';
       pro.variant = 'default';
     } else if (currentPlan === 'pro') {
-      pro.ctaText = 'Manage';
-      free.ctaText = 'Downgrade';
+      pro.ctaText = 'Управлять';
+      free.ctaText = 'Понизить';
       enterprise.variant = 'default';
     } else if (currentPlan === 'enterprise') {
-      enterprise.ctaText = 'Manage';
-      free.ctaText = 'Downgrade';
-      pro.ctaText = 'Downgrade';
+      enterprise.ctaText = 'Управлять';
+      free.ctaText = 'Понизить';
+      pro.ctaText = 'Понизить';
     }
 
     return [free, pro, enterprise];
-  }, [currentPlan, yearly, authenticated]);
+  }, [currentPlan, yearly, authenticated, manualBilling]);
 
   return (
     <div className="relative grid w-full grid-cols-[0.2fr_3fr_0.2fr] md:grid-cols-[0.5fr_3fr_0.5fr]">
@@ -198,17 +208,18 @@ export const Hero = ({ currentPlan, authenticated }: HeroProps) => {
         {/* Main content */}
         <div className="flex flex-col items-center justify-center px-5 py-16">
           <h1 className="mb-5 text-center font-medium text-4xl tracking-[-0.12rem] md:text-6xl">
-            Simple,{' '}
+            Простые,{' '}
             <span className="mr-1 font-semibold font-serif text-5xl italic md:text-7xl">
-              transparent
+              прозрачные
             </span>{' '}
-            pricing
+            тарифы
           </h1>
 
           <p className="max-w-3xl text-center text-muted-foreground tracking-[-0.01rem] sm:text-lg">
-            Tersa uses a flat fee and overage pricing model. This means you pay
-            a flat monthly cost which includes a certain amount of credits. If
-            you exceed your credits, you just pay for the extra usage.
+            Crafty использует модель фиксированной платы с доплатой за превышение. 
+            Это означает, что вы платите фиксированную ежемесячную стоимость, 
+            которая включает определённое количество кредитов. Если вы превысите 
+            лимит кредитов, вы просто доплачиваете за дополнительное использование.
           </p>
 
           {/* Pricing Toggle */}
@@ -217,7 +228,7 @@ export const Hero = ({ currentPlan, authenticated }: HeroProps) => {
               <span
                 className={`text-sm ${yearly ? 'text-muted-foreground' : 'font-medium text-primary'}`}
               >
-                Monthly
+                Ежемесячно
               </span>
               <Switch
                 checked={yearly}
@@ -227,9 +238,9 @@ export const Hero = ({ currentPlan, authenticated }: HeroProps) => {
               <span
                 className={`text-sm ${yearly ? 'font-medium text-primary' : 'text-muted-foreground'}`}
               >
-                Yearly{' '}
+                Ежегодно{' '}
                 <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-primary text-xs">
-                  Save 20%
+                  Экономия 20%
                 </span>
               </span>
             </div>
@@ -269,7 +280,7 @@ export const Hero = ({ currentPlan, authenticated }: HeroProps) => {
                   {plan.monthlyPrice === -1 && (
                     <div className="mb-4 h-[45px]">
                       <span className="font-medium text-3xl tracking-tight">
-                        Custom
+                        Индивидуально
                       </span>
                     </div>
                   )}
@@ -277,7 +288,7 @@ export const Hero = ({ currentPlan, authenticated }: HeroProps) => {
                   {plan.monthlyPrice === 0 && (
                     <div className="mb-4 h-[45px]">
                       <span className="font-medium text-3xl tracking-tight">
-                        Free
+                        Бесплатно
                       </span>
                     </div>
                   )}
@@ -295,14 +306,14 @@ export const Hero = ({ currentPlan, authenticated }: HeroProps) => {
                         />
                       </span>
                       <span className="text-muted-foreground">
-                        /mo, billed {yearly ? 'annually' : 'monthly'}
+                        /мес., оплата {yearly ? 'ежегодно' : 'ежемесячно'}
                       </span>
                     </div>
                   )}
 
                   {planIndex > 0 && (
                     <p className="mb-2 text-muted-foreground text-sm">
-                      Everything in {plans[planIndex - 1].name}, plus:
+                      Всё из тарифа “{plans[planIndex - 1].name}”, а также:
                     </p>
                   )}
 
@@ -320,9 +331,32 @@ export const Hero = ({ currentPlan, authenticated }: HeroProps) => {
                   </ul>
                 </CardContent>
                 <CardFooter className="mt-auto p-0">
-                  <Button className="w-full" variant={plan.variant} asChild>
-                    <Link href={plan.ctaLink}>{plan.ctaText}</Link>
-                  </Button>
+                  {plan.name === 'Хобби' && manualBilling ? (
+                    <Button
+                      className="w-full"
+                      variant={plan.variant}
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/v1/credits/claim', { method: 'POST' });
+                          if (!res.ok) throw new Error(await res.text());
+                          location.href = '/welcome';
+                        } catch (e) {
+                          console.error(e);
+                          alert('Не удалось выдать кредиты.');
+                        }
+                      }}
+                    >
+                      Получить кредиты
+                    </Button>
+                  ) : plan.name !== 'Хобби' ? (
+                    <Button className="w-full" variant={plan.variant} onClick={() => setContactOpen(true)}>
+                      {plan.ctaText}
+                    </Button>
+                  ) : (
+                    <Button className="w-full" variant={plan.variant} asChild>
+                      <Link href={plan.ctaLink}>{plan.ctaText}</Link>
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             </div>
@@ -333,6 +367,30 @@ export const Hero = ({ currentPlan, authenticated }: HeroProps) => {
       <div className="h-16" />
       <div className="border-x border-dotted" />
       <div className="" />
+
+      {/* Contact modal */}
+      {contactOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-background p-6 shadow-lg">
+            <h3 className="mb-2 font-medium text-xl">Связаться с менеджером</h3>
+            <p className="mb-4 text-muted-foreground">
+              Позвоните или напишите нам — поможем подобрать тариф и подключение.
+            </p>
+            <div className="grid gap-2">
+              <a className="underline" href="tel:+77066318623">Позвонить: +7 706 631 8623</a>
+              <a className="underline" href="https://wa.me/77066318623" target="_blank" rel="noreferrer">
+                WhatsApp: открыть чат
+              </a>
+              <a className="underline" href="https://t.me/+77066318623" target="_blank" rel="noreferrer">
+                Telegram: написать
+              </a>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setContactOpen(false)}>Закрыть</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

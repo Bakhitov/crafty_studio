@@ -2,21 +2,25 @@ import { currentUserProfile } from '@/lib/auth';
 import { env } from '@/lib/env';
 import { parseError } from '@/lib/error/parse';
 import { stripe } from '@/lib/stripe';
+import { isManualBilling } from '@/lib/billing';
 import { NextResponse } from 'next/server';
 
 const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
 const returnUrl = `${protocol}://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
 
 export const GET = async () => {
+  if (isManualBilling()) {
+    return new Response('Биллинг отключён (ручной режим)', { status: 404 });
+  }
   try {
     const profile = await currentUserProfile();
 
     if (!profile) {
-      throw new Error('User profile not found');
+      throw new Error('Профиль пользователя не найден');
     }
 
     if (!profile.customerId) {
-      throw new Error('User customerId not found');
+      throw new Error('ID клиента пользователя не найден');
     }
 
     const session = await stripe.billingPortal.sessions.create({

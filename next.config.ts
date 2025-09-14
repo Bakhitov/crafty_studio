@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
         hostname: 'zszbbhofscgnnkvyonow.supabase.co',
       },
 
+      // Supabase storage, development (current project)
+      {
+        protocol: 'https',
+        hostname: 'fnkygwkfofyhrfdknbtw.supabase.co',
+      },
+
       // Supabase storage, development
       {
         protocol: 'http',

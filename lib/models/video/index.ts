@@ -1,7 +1,7 @@
 import { ReplicateIcon } from '@/lib/icons';
 import {
-  type TersaModel,
-  type TersaProvider,
+  type CraftyModel,
+  type CraftyProvider,
   providers,
 } from '@/lib/providers';
 import { luma } from './luma';
@@ -21,14 +21,14 @@ export type VideoModel = {
   }) => Promise<string>;
 };
 
-export type TersaVideoModel = TersaModel & {
-  providers: (TersaProvider & {
+export type CraftyVideoModel = CraftyModel & {
+  providers: (CraftyProvider & {
     model: VideoModel;
     getCost: ({ duration }: { duration: number }) => number;
   })[];
 };
 
-export const videoModels: Record<string, TersaVideoModel> = {
+export const videoModels: Record<string, CraftyVideoModel> = {
   'minimax-t2v-01-director': {
     label: 'T2V-01-Director',
     chef: providers.minimax,

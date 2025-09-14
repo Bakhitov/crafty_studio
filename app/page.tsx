@@ -5,9 +5,9 @@ import Home from './(unauthenticated)/home/page';
 import UnauthenticatedLayout from './(unauthenticated)/layout';
 
 export const metadata: Metadata = {
-  title: 'A visual AI playground | Tersa',
+  title: 'Визуальная AI площадка | Crafty',
   description:
-    'Tersa is an open source canvas for building AI workflows. Drag, drop connect and run nodes to build your own workflows powered by various industry-leading AI models.',
+    'Crafty Studio — платформа генерации контента для бизнеса в Казахстане. Собирайте AI‑воркфлоу без кода: тексты, изображения, видео и озвучка.',
 };
 
 const Index = async () => {

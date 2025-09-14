@@ -5,6 +5,8 @@ import { z } from 'zod';
 export const env = createEnv({
   extends: [vercel()],
   server: {
+    BILLING_MODE: z.enum(['manual', 'stripe']).default('stripe'),
+    ADMIN_TOKEN: z.string().min(1).optional(),
     UPSTASH_REDIS_REST_URL: z.string().url().min(1),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
 
@@ -40,12 +42,12 @@ export const env = createEnv({
     RUNWAYML_API_SECRET: z.string().min(1).startsWith('key_'),
     LUMA_API_KEY: z.string().min(1).startsWith('luma-'),
     BF_API_KEY: z.string().min(1),
+    ARK_API_KEY: z.string().min(1),
 
     // Vercel AI Gateway
     AI_GATEWAY_API_KEY: z.string().min(1),
   },
   client: {
-    NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1),
     NEXT_PUBLIC_POSTHOG_KEY: z.string().min(1),
     NEXT_PUBLIC_POSTHOG_HOST: z.string().url().min(1),
 
@@ -54,6 +56,8 @@ export const env = createEnv({
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   },
   runtimeEnv: {
+    BILLING_MODE: process.env.BILLING_MODE,
+    ADMIN_TOKEN: process.env.ADMIN_TOKEN,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     XAI_API_KEY: process.env.XAI_API_KEY,
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
@@ -62,7 +66,6 @@ export const env = createEnv({
     POSTGRES_URL: process.env.POSTGRES_URL,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
     MINIMAX_GROUP_ID: process.env.MINIMAX_GROUP_ID,
     MINIMAX_API_KEY: process.env.MINIMAX_API_KEY,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
@@ -85,6 +88,7 @@ export const env = createEnv({
     HUME_API_KEY: process.env.HUME_API_KEY,
     LMNT_API_KEY: process.env.LMNT_API_KEY,
     BF_API_KEY: process.env.BF_API_KEY,
+    ARK_API_KEY: process.env.ARK_API_KEY,
     AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
   },
 });

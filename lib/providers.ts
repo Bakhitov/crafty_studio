@@ -35,9 +35,10 @@ import {
   VercelIcon,
   XaiIcon,
   ZaiIcon,
+  ArkIcon,
 } from './icons';
 
-export type TersaProvider = {
+export type CraftyProvider = {
   id: string;
   name: string;
   icon: typeof OpenAiIcon;
@@ -219,6 +220,11 @@ export const providers = {
     name: 'Novita',
     icon: NovitaIcon,
   },
+  ark: {
+    id: 'ark',
+    name: 'Ark',
+    icon: ArkIcon,
+  },
   unknown: {
     id: 'unknown',
     name: 'Other',
@@ -226,12 +232,12 @@ export const providers = {
   },
 };
 
-export type TersaModel = {
+export type CraftyModel = {
   // Inherits from chef if not provided
   icon?: typeof OpenAiIcon;
   label: string;
-  chef: TersaProvider;
-  providers: TersaProvider[];
+  chef: CraftyProvider;
+  providers: CraftyProvider[];
   legacy?: boolean;
   priceIndicator?: PriceBracket;
   disabled?: boolean;

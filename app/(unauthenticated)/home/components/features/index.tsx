@@ -1,6 +1,7 @@
 import { CableIcon, GrabIcon, MoveIcon, PlayIcon } from 'lucide-react';
-import { CodeDemo } from './code-demo';
 import { ImageDemo } from './image-demo';
+import { ImageFromPhotoDemo } from './image-from-photo-demo';
+import { ImageCombineDemo } from './image-combine-demo';
 import { SpeechDemo } from './speech-demo';
 import { TextDemo } from './text-demo';
 import { VideoDemo } from './video-demo';
@@ -40,19 +41,15 @@ export const Features = () => (
       {/* Main content */}
       <div className="grid items-center justify-center px-5 py-8">
         <h2 className="mt-6 mb-5 text-center font-medium text-3xl tracking-[-0.12rem] sm:text-4xl md:text-5xl">
-          <MoveIcon className="ml-1 inline-block size-5 align-baseline sm:ml-2 sm:size-7 md:ml-3 md:size-8" />{' '}
-          Drag,{' '}
-          <GrabIcon className="ml-1 inline-block size-5 align-baseline sm:ml-2 sm:size-7 md:ml-3 md:size-8" />{' '}
-          drop,
-          <CableIcon className="ml-1 inline-block size-5 align-baseline sm:ml-2 sm:size-7 md:ml-3 md:size-8" />{' '}
-          connect and{' '}
-          <PlayIcon className="ml-1 inline-block size-5 align-baseline sm:ml-2 sm:size-7 md:ml-3 md:size-8" />{' '}
-          run
+          <MoveIcon className="ml-1 inline-block size-5 align-baseline sm:ml-2 sm:size-7 md:ml-3 md:size-8" /> Перетаскивайте,
+          <GrabIcon className="ml-1 inline-block size-5 align-baseline sm:ml-2 sm:size-7 md:ml-3 md:size-8" /> соединяйте,
+          <CableIcon className="ml-1 inline-block size-5 align-baseline sm:ml-2 sm:size-7 md:ml-3 md:size-8" /> запускайте
+          <PlayIcon className="ml-1 inline-block size-5 align-baseline sm:ml-2 sm:size-7 md:ml-3 md:size-8" /> ваши процессы
         </h2>
 
         <p className="mx-auto max-w-lg text-center text-muted-foreground tracking-[-0.01rem] sm:text-lg">
-          Tersa uses a drag and drop interface to build workflows, making it
-          super easy to create complex workflows with ease.
+          Crafty использует интерфейс drag‑and‑drop, чтобы вы быстро собирали
+          мощные AI‑воркфлоу без кода.
         </p>
       </div>
     </div>
@@ -76,76 +73,74 @@ export const Features = () => (
             <TextDemo />
           </div>
           <div className="grid gap-2">
-            <h3 className="font-medium text-xl sm:text-2xl">
-              Synthesize answers
-            </h3>
+            <h3 className="font-medium text-xl sm:text-2xl">Генерируйте посты и промпты</h3>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Use models like GPT-4o, Claude 3.5 Sonnet and more to generate
-              text from incoming nodes. Connect text nodes for prompts and image
-              nodes for attachments.
+              Используйте модели вроде GPT‑4o и Claude 3.5 для постов, описаний. Так же для генерации промптов.
             </p>
           </div>
         </div>
-
-        <div className="grid gap-4 p-8">
+      <div className="grid gap-4 border-b border-dotted p-8 sm:border-r sm:border-b-0">
           <div className="aspect-video w-full overflow-hidden rounded-lg border">
-            <ImageDemo />
+            <SpeechDemo />
           </div>
           <div className="grid gap-2">
-            <h3 className="font-medium text-xl sm:text-2xl">Generate images</h3>
+            <h3 className="font-medium text-xl sm:text-2xl">Распознавайте и озвучивайте речь</h3>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Use models like DALL-E 3 to generate images from text prompts and
-              audio transcriptions, or gpt-image-1 to create variations of
-              existing images.
+              Транскрибируйте аудио и создавайте естественную озвучку для ваших материалов.
             </p>
           </div>
         </div>
 
         <div className="grid items-start gap-8 border-y border-dotted p-8 sm:col-span-2 lg:grid-cols-3">
           <div className="aspect-video w-full overflow-hidden rounded-lg border lg:col-span-2">
+            <ImageDemo />
+          </div>
+          <div className="grid gap-2">
+            <h3 className="font-medium text-xl sm:text-2xl">Создавайте изображения</h3>
+            <p className="text-muted-foreground text-sm sm:text-base">
+              Генерируйте визуалы и вариации по тексту.
+            </p>
+          </div>
+        </div>
+
+  <div className="grid gap-4 border-b border-dotted p-8 sm:border-r sm:border-b-0">
+          <div className="aspect-video w-full overflow-hidden rounded-lg border">
+            <ImageFromPhotoDemo />
+          </div>
+          <div className="grid gap-2">
+            <h3 className="font-medium text-xl sm:text-2xl">Создавайте изображения по исходным фотографиям</h3>
+            <p className="text-muted-foreground text-sm sm:text-base">
+              Генерируйте визуалы и вариации по исходным фотографиям.
+            </p>
+          </div>
+
+        </div>
+          <div className="grid gap-4 border-b border-dotted p-8 sm:border-r sm:border-b-0">
+          <div className="aspect-video w-full overflow-hidden rounded-lg border">
+            <ImageCombineDemo />
+          </div>
+          <div className="grid gap-2">
+            <h3 className="font-medium text-xl sm:text-2xl">Комбинируйте изображения по исходным фотографиям</h3>
+            <p className="text-muted-foreground text-sm sm:text-base">
+              Комбинируйте изображения и генерируйте новые визуалы по исходным фотографиям.
+            </p>
+          </div>
+        </div>
+
+
+        <div className="grid items-start gap-8 border-y border-dotted p-8 sm:col-span-2 lg:grid-cols-3">
+          <div className="aspect-video w-full overflow-hidden rounded-lg border lg:col-span-2">
             <VideoDemo />
           </div>
           <div className="grid gap-2">
-            <h3 className="font-medium text-xl sm:text-2xl">Create videos</h3>
+            <h3 className="font-medium text-xl sm:text-2xl">Создавайте видео</h3>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Use models like Minimax's T2V-01-Director on Runway's Gen4 Turbo
-              to create videos from text prompts, or connect an image node to
-              create a video from an existing image.
+              Превращайте тексты и изображения в видео‑ролики для рекламы и соцсетей.
             </p>
           </div>
         </div>
 
-        <div className="grid gap-4 border-b border-dotted p-8 sm:border-r sm:border-b-0">
-          <div className="aspect-video w-full overflow-hidden rounded-lg border">
-            <SpeechDemo />
-          </div>
-          <div className="grid gap-2">
-            <h3 className="font-medium text-xl sm:text-2xl">
-              Capture and narrate speech
-            </h3>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Use models like OpenAI's Whisper to transcribe audio from incoming
-              nodes. Connect text nodes to provide prompts and audio nodes to
-              attach them to the request.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-4 p-8">
-          <div className="aspect-video w-full overflow-hidden rounded-lg border">
-            <CodeDemo />
-          </div>
-          <div className="grid gap-2">
-            <h3 className="font-medium text-xl sm:text-2xl">
-              Transform and refactor code
-            </h3>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Use AI models to analyze, refactor, and optimize your code.
-              Connect code nodes to provide source files and text nodes to
-              specify transformation instructions or requirements.
-            </p>
-          </div>
-        </div>
+        
       </div>
     </div>
     <div className="border-b border-dotted" />

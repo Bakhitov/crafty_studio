@@ -2,10 +2,8 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { env } from '@/lib/env';
 import { handleError } from '@/lib/error/handle';
 import { createClient } from '@/lib/supabase/client';
-import { Turnstile } from '@marsidev/react-turnstile';
 import { useRouter } from 'next/navigation';
 import { type FormEventHandler, useState } from 'react';
 
@@ -14,10 +12,7 @@ export const SignUpForm = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const [captchaToken, setCaptchaToken] = useState<string | undefined>(
-    undefined
-  );
-  const disabled = isLoading || !email || !password || !captchaToken;
+  const disabled = isLoading || !email || !password;
 
   const handleEmailSignUp: FormEventHandler<HTMLFormElement> = async (
     event
@@ -35,7 +30,6 @@ export const SignUpForm = () => {
             '/auth/confirm',
             window.location.origin
           ).toString(),
-          captchaToken,
         },
       });
 
@@ -83,12 +77,6 @@ export const SignUpForm = () => {
           </Button>
         </div>
       </form>
-      <div className="mt-4">
-        <Turnstile
-          siteKey={env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-          onSuccess={setCaptchaToken}
-        />
-      </div>
     </>
   );
 };

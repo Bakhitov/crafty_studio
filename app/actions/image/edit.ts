@@ -140,19 +140,41 @@ export const editImageAction = async ({
 
       image = generatedImageResponse.image;
     } else {
-      const base64Image = await fetch(images[0].url)
-        .then((res) => res.arrayBuffer())
-        .then((buffer) => Buffer.from(buffer).toString('base64'));
+      // Prepare provider-specific image payloads
+      let providerOptions: unknown;
+
+      const providerName = (provider.model as { provider?: string }).provider;
+
+      if (providerName === 'ark') {
+        // Ark supports one or many images; send data URLs for each image
+        const dataUrls = await Promise.all(
+          images.map(async (img) => {
+            const base64 = await fetch(img.url)
+              .then((res) => res.arrayBuffer())
+              .then((buffer) => Buffer.from(buffer).toString('base64'));
+            return `data:${img.type.toLowerCase()};base64,${base64}`;
+          })
+        );
+
+        providerOptions = {
+          ark: {
+            image: dataUrls.length === 1 ? dataUrls[0] : dataUrls,
+          },
+        } as const;
+      } else if (providerName === 'black-forest-labs') {
+        // BFL (Flux) accepts single base64 image prompt for i2i
+        const base64First = await fetch(images[0].url)
+          .then((res) => res.arrayBuffer())
+          .then((buffer) => Buffer.from(buffer).toString('base64'));
+
+        providerOptions = { bfl: { image: base64First } } as const;
+      }
 
       const generatedImageResponse = await generateImage({
         model: provider.model,
         prompt,
         size: size as never,
-        providerOptions: {
-          bfl: {
-            image: base64Image,
-          },
-        },
+        providerOptions: providerOptions as never,
       });
 
       await trackCreditUsage({

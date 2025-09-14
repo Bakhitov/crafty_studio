@@ -133,6 +133,11 @@ export const generateImageAction = async ({
         aspectRatio = `${width / divisor}:${height / divisor}`;
       }
 
+      const providerOptions =
+        (provider.model as { provider?: string }).provider === 'ark'
+          ? undefined // Ark t2i doesn't need providerOptions
+          : undefined;
+
       const generatedImageResponse = await generateImage({
         model: provider.model,
         prompt: [
@@ -146,6 +151,7 @@ export const generateImageAction = async ({
         ].join('\n'),
         size: size as never,
         aspectRatio,
+        providerOptions: providerOptions as never,
       });
 
       await trackCreditUsage({

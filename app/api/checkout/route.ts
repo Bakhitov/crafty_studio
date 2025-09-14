@@ -2,6 +2,7 @@ import { currentUser, currentUserProfile } from '@/lib/auth';
 import { env } from '@/lib/env';
 import { parseError } from '@/lib/error/parse';
 import { stripe } from '@/lib/stripe';
+import { isManualBilling } from '@/lib/billing';
 import { type NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 
@@ -17,7 +18,7 @@ const getFrequencyPrice = async (
   });
 
   if (prices.data.length === 0) {
-    throw new Error('Product prices not found');
+    throw new Error('Цены продукта не найдены');
   }
 
   const price = prices.data.find(
@@ -25,13 +26,16 @@ const getFrequencyPrice = async (
   );
 
   if (!price) {
-    throw new Error('Price not found');
+    throw new Error('Цена не найдена');
   }
 
   return price.id;
 };
 
 export const GET = async (request: NextRequest) => {
+  if (isManualBilling()) {
+    return new Response('Биллинг отключён (ручной режим)', { status: 404 });
+  }
   const { searchParams } = new URL(request.url);
   const productName = searchParams.get('product');
   const frequency = searchParams.get('frequency');
@@ -39,30 +43,30 @@ export const GET = async (request: NextRequest) => {
   const user = await currentUser();
 
   if (!user) {
-    return new Response('You must be logged in to subscribe', { status: 401 });
+    return new Response('Вы должны войти в систему для подписки', { status: 401 });
   }
 
   if (typeof productName !== 'string') {
-    return new Response('Missing product', { status: 400 });
+    return new Response('Отсутствует продукт', { status: 400 });
   }
 
   if (typeof frequency !== 'string') {
-    return new Response('Missing frequency', { status: 400 });
+    return new Response('Отсутствует частота', { status: 400 });
   }
 
   if (frequency !== 'month' && frequency !== 'year') {
-    return new Response('Invalid frequency', { status: 400 });
+    return new Response('Неверная частота', { status: 400 });
   }
 
   const profile = await currentUserProfile();
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
   if (!profile) {
-    return new Response('Profile not found', { status: 404 });
+    return new Response('Профиль не найден', { status: 404 });
   }
 
   if (!profile.customerId && !user.email) {
-    return new Response('Customer ID or email not found', { status: 400 });
+    return new Response('ID клиента или email не найден', { status: 400 });
   }
 
   if (productName === 'hobby') {
@@ -105,7 +109,7 @@ export const GET = async (request: NextRequest) => {
     });
 
     if (!checkoutLink.url) {
-      throw new Error('Checkout link not found');
+      throw new Error('Ссылка на оплату не найдена');
     }
 
     return NextResponse.redirect(checkoutLink.url);

@@ -1,8 +1,6 @@
-![Tersa image](/app/opengraph-image.png)
+# Crafty Studio
 
-# Tersa
-
-A visual AI playground. Tersa is an open source canvas for building AI workflows. Drag, drop connect and run nodes to build your own workflows powered by various industry-leading AI models.
+Платформа генерации контента для бизнеса. Создавайте тексты, изображения, видео и озвучку с помощью AI‑воркфлоу без кода.
 
 ## Features
 
@@ -15,15 +13,15 @@ A visual AI playground. Tersa is an open source canvas for building AI workflows
 
 ## Technologies
 
-- [Next.js 15](https://nextjs.org/) with App Router and Turbopack
-- [React 19](https://react.dev/)
-- [Supabase](https://supabase.com/) for authentication and data storage
-- [Vercel AI SDK](https://sdk.vercel.ai/) for AI model integration
-- [ReactFlow](https://reactflow.dev/) for the visual canvas
-- [TipTap](https://tiptap.dev/) for rich text editing
-- [Drizzle ORM](https://orm.drizzle.team/) for database queries
-- [Tailwind CSS](https://tailwindcss.com/) for styling
-- [shadcn/ui](https://ui.shadcn.com/), [Kibo UI](https://www.kibo-ui.com/) and [Radix UI](https://www.radix-ui.com/) for accessible UI components
+- Next.js 15 (App Router, Turbopack)
+- React 19
+- Supabase (аутентификация и хранение данных)
+- Vercel AI SDK (интеграция AI‑моделей)
+- ReactFlow (визуальное полотно)
+- TipTap (rich‑text)
+- Drizzle ORM (запросы к БД)
+- Tailwind CSS (стили)
+- shadcn/ui, Kibo UI, Radix UI (компоненты)
 
 ## Getting Started
 
@@ -39,8 +37,8 @@ A visual AI playground. Tersa is an open source canvas for building AI workflows
 
 1. Clone the repository
    ```sh
-   git clone https://github.com/haydenbleasel/tersa.git
-   cd tersa
+   git clone https://github.com/haydenbleasel/crafty.git
+   cd crafty
    ```
 
 2. Install dependencies
@@ -66,10 +64,6 @@ A visual AI playground. Tersa is an open source canvas for building AI workflows
 5. Configure node settings as needed
 6. Run your workflow to process data through the AI models
 
-## License
+## Примечание
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-Made with ❤️ and 🤖 by [Hayden Bleasel](https://x.com/haydenbleasel).
+Этот репозиторий используется как основа для Crafty Studio.

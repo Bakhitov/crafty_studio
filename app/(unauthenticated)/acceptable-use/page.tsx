@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 const title = 'Acceptable Use Policy';
 const description =
-  'This acceptable use policy covers the products, services, and technologies (collectively referred to as the “Products”) provided by Tersa under any ongoing agreement.';
+  'This acceptable use policy covers the products, services, and technologies (collectively referred to as the “Products”) provided by Crafty under any ongoing agreement.';
 
 export const metadata: Metadata = {
   title,
@@ -68,7 +68,7 @@ const Privacy = () => (
           community from unethical, irresponsible, and illegal activity.
         </p>
         <p>
-          Tersa customers found engaging in activities prohibited by this
+          Crafty customers found engaging in activities prohibited by this
           acceptable use policy can be liable for service suspension and account
           termination. In extreme cases, we may be legally obliged to report
           such customers to the relevant authorities.
@@ -238,11 +238,11 @@ const Privacy = () => (
           including any affiliation with others whatsoever who support the above
           such activities or causes.
         </p>
-        <h3>Unauthorized use of Tersa property</h3>
+        <h3>Unauthorized use of Crafty property</h3>
         <p>
-          We prohibit the impersonation of Tersa, the representation of a
-          significant business relationship with Tersa, or ownership of any
-          Tersa property (including our Products and brand) for the purpose of
+          We prohibit the impersonation of Crafty, the representation of a
+          significant business relationship with Crafty, or ownership of any
+          Crafty property (including our Products and brand) for the purpose of
           fraudulently gaining service, custom, patronage, or user trust.
         </p>
         <h2>About this policy</h2>

@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { nodeButtons } from '@/lib/node-buttons';
 import { useNodeOperations } from '@/providers/node-operations';
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { CodeIcon, CopyIcon, EyeIcon, TrashIcon } from 'lucide-react';
@@ -48,6 +49,7 @@ export const NodeLayout = ({
   const { deleteElements, setCenter, getNode, updateNode } = useReactFlow();
   const { duplicateNode } = useNodeOperations();
   const [showData, setShowData] = useState(false);
+  const NodeIcon = nodeButtons.find((b) => b.id === type)?.icon;
 
   const handleFocus = () => {
     const node = getNode(id);
@@ -105,7 +107,8 @@ export const NodeLayout = ({
           <div className="relative size-full h-auto w-sm">
             {type !== 'drop' && (
               <div className="-translate-y-full -top-2 absolute right-0 left-0 flex shrink-0 items-center justify-between">
-                <p className="font-mono text-muted-foreground text-xs tracking-tighter">
+                <p className="font-mono text-muted-foreground text-xs tracking-tighter flex items-center gap-1">
+                  {NodeIcon ? <NodeIcon size={10} /> : null}
                   {title}
                 </p>
               </div>
@@ -147,7 +150,15 @@ export const NodeLayout = ({
           )}
         </ContextMenuContent>
       </ContextMenu>
-      {type !== 'video' && <Handle type="source" position={Position.Right} />}
+      {type !== 'video' && (
+        <>
+          <Handle
+            type="source"
+            position={Position.Right}
+            className="!bg-transparent !border-none !shadow-none"
+          />
+        </>
+      )}
       <Dialog open={showData} onOpenChange={setShowData}>
         <DialogContent>
           <DialogHeader>

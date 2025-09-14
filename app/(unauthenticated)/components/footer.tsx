@@ -37,16 +37,16 @@ export const Footer = () => (
       {/* Main content */}
       <div className="flex flex-col items-center justify-center px-5 py-16">
         <h2 className="mb-5 text-center font-medium text-3xl tracking-[-0.12rem] md:text-5xl">
-          Get started <LocalTime />
+          Начните сегодня
         </h2>
 
         <p className="max-w-2xl text-center text-lg text-muted-foreground tracking-[-0.01rem]">
-          Get started for free and start creating your own AI workflows.
+          Начните бесплатно и соберите свои первые AI‑воркфлоу.
         </p>
 
         <div className="mt-8 flex flex-col items-center justify-center gap-4 md:flex-row">
           <Button asChild size="lg" className="w-full sm:w-auto">
-            <Link href="/auth/sign-up">Get started for free</Link>
+            <Link href="/auth/sign-up">Начать бесплатно</Link>
           </Button>
           <Button
             asChild
@@ -54,7 +54,7 @@ export const Footer = () => (
             size="lg"
             className="w-full sm:w-auto"
           >
-            <Link href="/auth/login">Login</Link>
+            <Link href="/auth/login">Войти</Link>
           </Button>
         </div>
       </div>

@@ -1,5 +1,4 @@
-import { OrDivider } from '@/components/or-divider';
-import { SocialAuth } from '@/components/social-auth';
+// Соц-авторизация скрыта
 import {
   Card,
   CardContent,
@@ -11,8 +10,8 @@ import {
 import Link from 'next/link';
 import { LoginForm } from './components/login-form';
 
-const title = 'Login';
-const description = 'Enter your email or choose a social provider.';
+const title = 'Вход';
+const description = 'Введите email или выберите социальную сеть.';
 
 export const metadata = {
   title,
@@ -26,17 +25,15 @@ const LoginPage = () => (
       <CardDescription>{description}</CardDescription>
     </CardHeader>
     <CardContent className="rounded-b-xl border-b bg-background pb-8">
-      <SocialAuth />
-      <OrDivider />
       <LoginForm />
     </CardContent>
     <CardFooter className="flex items-center justify-center gap-1 p-4 text-xs">
-      <p>Don&apos;t have an account?</p>
+      <p>Нет аккаунта?</p>
       <Link
         href="/auth/sign-up"
         className="text-primary underline underline-offset-4"
       >
-        Sign up
+        Регистрация
       </Link>
     </CardFooter>
   </Card>

@@ -397,7 +397,12 @@ export const Canvas = ({ children, ...props }: ReactFlowProps) => {
               zoomOnDoubleClick={false}
               panOnDrag={false}
               selectionOnDrag={true}
-              onDoubleClick={addDropNode}
+              onDoubleClick={(e) => {
+                const target = e.target as HTMLElement;
+                if (target.classList.contains('react-flow__pane')) {
+                  addDropNode(e as never);
+                }
+              }}
               {...rest}
             >
               <Background />

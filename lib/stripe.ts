@@ -1,12 +1,11 @@
 import Stripe from 'stripe';
 import { currentUserProfile } from './auth';
 import { env } from './env';
+import { isManualBilling, trackCredits } from './billing';
 
 export const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
   apiVersion: '2025-05-28.basil',
 });
-
-const creditValue = 0.005;
 
 export const trackCreditUsage = async ({
   action,
@@ -15,22 +14,27 @@ export const trackCreditUsage = async ({
   action: string;
   cost: number;
 }) => {
+  if (isManualBilling()) {
+    await trackCredits(cost);
+    return;
+  }
+
   const profile = await currentUserProfile();
-  const credits = Math.ceil(cost / creditValue);
 
   if (!profile) {
-    throw new Error('User profile not found');
+    throw new Error('Профиль пользователя не найден');
   }
 
   if (!profile.customerId) {
-    throw new Error('User customerId not found');
+    throw new Error('ID клиента пользователя не найден');
   }
 
+  // $ → credits в Stripe считается на стороне Stripe через meter price
   await stripe.billing.meterEvents.create({
     event_name: env.STRIPE_CREDITS_METER_NAME,
     payload: {
       action,
-      value: credits.toString(),
+      value: undefined, // используем default quantity=1, если нужен value — перенесите формулу в Stripe
       stripe_customer_id: profile.customerId,
     },
   });

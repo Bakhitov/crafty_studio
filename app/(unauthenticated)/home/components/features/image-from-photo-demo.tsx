@@ -3,38 +3,30 @@ import { type Edge, type Node, ReactFlowProvider } from '@xyflow/react';
 
 const nodes: Node[] = [
   {
-    id: 'primitive-1',
-    type: 'text',
-    position: { x: 0, y: 0 },
-    data: {
-      text: 'A wild field of delphiniums',
-      content: {
-        type: 'doc',
-        content: [
-          {
-            type: 'paragraph',
-            content: [
-              {
-                type: 'text',
-                text: 'A wild field of delphiniums',
-              },
-            ],
-          },
-        ],
-      },
-    },
-  },
-  {
-    id: 'transform-1',
+    id: 'image-input-1',
     type: 'image',
-    position: { x: 600, y: 0 },
+    position: { x: 0, y: 20 },
     data: {
-      model: 'seedream-4-0-250828',
-      generated: {
+      content: {
         url: '/demo/delphiniums-anime.jpg',
         type: 'image/jpeg',
       },
-      instructions: 'Make it anime style.',
+      description: 'Пример исходной фотографии',
+    },
+    origin: [0, 0.5],
+  },
+  {
+    id: 'image-transform-1',
+    type: 'image',
+    position: { x: 600, y: 20 },
+    data: {
+      model: 'seedream-4-0-250828',
+      instructions: 'Сгенерировать вариации по исходной фотографии',
+      generated: {
+        url: '/demo/delphiniums-fantasy.jpg',
+        type: 'image/jpeg',
+      },
+      size: '1024x1024',
     },
     origin: [0, 0.5],
   },
@@ -42,14 +34,14 @@ const nodes: Node[] = [
 
 const edges: Edge[] = [
   {
-    id: 'edge-1',
-    source: 'primitive-1',
-    target: 'transform-1',
+    id: 'edge-image-1',
+    source: 'image-input-1',
+    target: 'image-transform-1',
     type: 'animated',
   },
 ];
 
-export const ImageDemo = () => (
+export const ImageFromPhotoDemo = () => (
   <ReactFlowProvider>
     <Canvas
       nodes={nodes}
@@ -63,3 +55,5 @@ export const ImageDemo = () => (
     />
   </ReactFlowProvider>
 );
+
+

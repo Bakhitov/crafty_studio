@@ -1,6 +1,6 @@
 import {
-  type TersaModel,
-  type TersaProvider,
+  type CraftyModel,
+  type CraftyProvider,
   providers,
 } from '@/lib/providers';
 import { bedrock } from '@ai-sdk/amazon-bedrock';
@@ -10,13 +10,14 @@ import { xai } from '@ai-sdk/xai';
 import type { ImageModel } from 'ai';
 import { AmazonBedrockIcon, GrokIcon } from '../../icons';
 import { blackForestLabs } from './black-forest-labs';
+import { ark } from './ark';
 
 const million = 1000000;
 
 export type ImageSize = `${number}x${number}`;
 
-type TersaImageModel = TersaModel & {
-  providers: (TersaProvider & {
+type CraftyImageModel = CraftyModel & {
+  providers: (CraftyProvider & {
     model: ImageModel;
     getCost: (props?: {
       textInput?: number;
@@ -30,7 +31,47 @@ type TersaImageModel = TersaModel & {
   providerOptions?: Record<string, Record<string, string>>;
 };
 
-export const imageModels: Record<string, TersaImageModel> = {
+export const imageModels: Record<string, CraftyImageModel> = {
+  'seedream-4-0-250828': {
+    label: 'Seedream 4.0',
+    chef: providers.ark,
+    providers: [
+      {
+        ...providers.ark,
+        model: ark.image('seedream-4-0-250828'),
+        // Billing: per generated image; tokens provided in response. Use a flat approx until clarified.
+        getCost: () => 0.03,
+      },
+    ],
+    // Ark supports choosing size via labels like 1K/2K/4K or explicit WxH; leave flexible
+    supportsEdit: true,
+    default: true,
+  },
+  'seedream-3-0-t2i-250415': {
+    label: 'Seedream 3.0 T2I',
+    chef: providers.ark,
+    providers: [
+      {
+        ...providers.ark,
+        model: ark.image('seedream-3-0-t2i-250415'),
+        getCost: () => 0.02,
+      },
+    ],
+    supportsEdit: false,
+    priceIndicator: 'low',
+  },
+  'seededit-3-0-i2i-250628': {
+    label: 'Seededit 3.0 I2I',
+    chef: providers.ark,
+    providers: [
+      {
+        ...providers.ark,
+        model: ark.image('seededit-3-0-i2i-250628'),
+        getCost: () => 0.02,
+      },
+    ],
+    supportsEdit: true,
+  },
   'grok-2-image': {
     icon: GrokIcon,
     label: 'Grok 2 Image',
@@ -175,13 +216,14 @@ export const imageModels: Record<string, TersaImageModel> = {
     ],
     supportsEdit: true,
     sizes: ['1024x1024', '1024x1536', '1536x1024'],
-    default: true,
+    default: false,
     providerOptions: {
       openai: {
         quality: 'high',
       },
     },
   },
+  // Seedream 4.0 уже определён выше и помечен как default
   'amazon-nova-canvas-v1': {
     label: 'Nova Canvas',
     icon: AmazonBedrockIcon,

@@ -4,6 +4,7 @@ import { currentUserProfile } from '@/lib/auth';
 import { env } from '@/lib/env';
 import { parseError } from '@/lib/error/parse';
 import { stripe } from '@/lib/stripe';
+import { getManualCredits, isManualBilling } from '@/lib/billing';
 
 const HOBBY_CREDITS = 200;
 
@@ -16,18 +17,25 @@ export const getCredits = async (): Promise<
     }
 > => {
   try {
+    if (isManualBilling()) {
+      const profile = await currentUserProfile();
+      if (!profile) throw new Error('User profile not found');
+      const credits = await getManualCredits(profile.id);
+      return { credits };
+    }
+
     const profile = await currentUserProfile();
 
     if (!profile) {
-      throw new Error('User profile not found');
+      throw new Error('Профиль пользователя не найден');
     }
 
     if (!profile.customerId) {
-      throw new Error('Customer ID not found');
+      throw new Error('ID клиента не найден');
     }
 
     if (!profile.subscriptionId) {
-      throw new Error('Customer ID not found');
+      throw new Error('ID подписки не найден');
     }
 
     const upcomingInvoice = await stripe.invoices.createPreview({
@@ -40,11 +48,11 @@ export const getCredits = async (): Promise<
     );
 
     if (!usageProductLineItem) {
-      throw new Error('Usage product line item not found');
+      throw new Error('Позиция продукта использования не найдена');
     }
 
     if (!usageProductLineItem.pricing?.price_details?.price) {
-      throw new Error('Usage product line item price not found');
+      throw new Error('Цена позиции продукта использования не найдена');
     }
 
     // Hobby plan fallback
@@ -57,11 +65,11 @@ export const getCredits = async (): Promise<
       );
 
       if (!usagePrice.tiers?.length) {
-        throw new Error('Usage price tiers not found');
+        throw new Error('Уровни цены использования не найдены');
       }
 
       if (!usagePrice.tiers[0].up_to) {
-        throw new Error('Usage price tier limit not found');
+        throw new Error('Лимит уровня цены использования не найден');
       }
 
       credits = usagePrice.tiers[0].up_to;

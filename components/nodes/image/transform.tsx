@@ -17,6 +17,7 @@ import {
   Loader2Icon,
   PlayIcon,
   RotateCcwIcon,
+  XIcon,
 } from 'lucide-react';
 import Image from 'next/image';
 import {
@@ -25,12 +26,15 @@ import {
   useCallback,
   useMemo,
   useState,
+  useEffect,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { mutate } from 'swr';
 import type { ImageNodeProps } from '.';
 import { ModelSelector } from '../model-selector';
 import { ImageSizeSelector } from './image-size-selector';
+import { listUserFiles, type UserFile } from '@/app/actions/image/list-files';
 
 type ImageTransformProps = ImageNodeProps & {
   title: string;
@@ -89,10 +93,18 @@ export const ImageTransform = ({
         instructionsLength: data.instructions?.length ?? 0,
       });
 
+      // Combine Instructions + Prompt (text nodes) for I2I
+      const combinedInstructions = [
+        data.instructions?.trim(),
+        textNodes.length ? ['--- Context ---', ...textNodes].join('\n') : undefined,
+      ]
+        .filter(Boolean)
+        .join('\n');
+
       const response = imageNodes.length
         ? await editImageAction({
             images: imageNodes,
-            instructions: data.instructions,
+            instructions: combinedInstructions,
             nodeId: id,
             projectId: project.id,
             modelId,
@@ -209,6 +221,8 @@ export const ImageTransform = ({
           }
     );
 
+    // (removed) Gallery button — теперь в нижнем глобальном тулбаре
+
     if (data.generated) {
       items.push({
         tooltip: 'Download',
@@ -263,6 +277,29 @@ export const ImageTransform = ({
     return `${width}/${height}`;
   }, [data.size]);
 
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [gallery, setGallery] = useState<UserFile[] | null>(null);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+
+  const openGallery = useCallback(async () => {
+    if (galleryLoading) return;
+    setIsGalleryOpen(true);
+    if (gallery) return;
+    setGalleryLoading(true);
+    try {
+      const result = await listUserFiles();
+      if ('files' in result) setGallery(result.files);
+    } finally {
+      setGalleryLoading(false);
+    }
+  }, [gallery, galleryLoading]);
+
   return (
     <NodeLayout id={id} data={data} type={type} title={title} toolbar={toolbar}>
       {loading && (
@@ -293,7 +330,8 @@ export const ImageTransform = ({
           alt="Generated image"
           width={1000}
           height={1000}
-          className="w-full rounded-b-xl object-cover"
+          className="w-full rounded-b-xl object-cover cursor-zoom-in"
+          onClick={() => setIsPreviewOpen(true)}
         />
       )}
       <Textarea
@@ -302,6 +340,108 @@ export const ImageTransform = ({
         placeholder="Enter instructions"
         className="shrink-0 resize-none rounded-none border-none bg-transparent! shadow-none focus-visible:ring-0"
       />
+      {mounted && isPreviewOpen && data.generated?.url
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90"
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setIsPreviewOpen(false)}
+            >
+              <button
+                type="button"
+                aria-label="Close image preview"
+                className="absolute right-4 top-4 z-[102] inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                onClick={() => setIsPreviewOpen(false)}
+              >
+                <XIcon size={18} />
+              </button>
+              <div className="relative z-[101] h-full w-full" onClick={(e) => e.stopPropagation()}>
+                <Image
+                  src={data.generated.url}
+                  alt="Image preview"
+                  fill
+                  className="object-contain"
+                  sizes="100vw"
+                  priority
+                />
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
+
+      {isGalleryOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setIsGalleryOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          onLoad={() => {
+            // lazy load content
+            void openGallery();
+          }}
+        >
+          <div
+            className="relative m-4 w-[min(1200px,100vw-2rem)] max-h-[90vh] rounded-xl bg-background p-4 shadow"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <h3 className="text-lg font-semibold">My files</h3>
+              <button
+                type="button"
+                aria-label="Close gallery"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-secondary hover:bg-secondary/80"
+                onClick={() => setIsGalleryOpen(false)}
+              >
+                <XIcon size={16} />
+              </button>
+            </div>
+            <div className="grid max-h-[75vh] grid-cols-2 gap-3 overflow-auto md:grid-cols-3 lg:grid-cols-4">
+              {galleryLoading && <div className="col-span-full text-sm text-muted-foreground">Loading...</div>}
+              {gallery && gallery.length === 0 && (
+                <div className="col-span-full text-sm text-muted-foreground">No files yet</div>
+              )}
+              {gallery?.map((file) => (
+                <div key={file.url} className="group relative overflow-hidden rounded-lg border">
+                  <div className="relative aspect-square bg-secondary">
+                    <Image src={file.url} alt={file.name} fill className="object-cover" sizes="25vw" />
+                  </div>
+                  <div className="flex items-center justify-between gap-2 p-2">
+                    <div className="min-w-0 flex-1 truncate text-xs">{file.name}</div>
+                    <div className="flex items-center gap-1">
+                      <a
+                        href={file.url}
+                        download
+                        className="inline-flex items-center rounded-md border px-2 py-1 text-xs hover:bg-secondary"
+                      >
+                        Download
+                      </a>
+                      <button
+                        type="button"
+                        className="inline-flex items-center rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground hover:opacity-90"
+                        onClick={() => {
+                          // вставляем файл в текущий проект (центр экрана)
+                          const center = project?.viewport?.x !== undefined
+                            ? { x: project.viewport.x + (project.viewport.width ?? 0) / 2, y: project.viewport.y + (project.viewport.height ?? 0) / 2 }
+                            : { x: 0, y: 0 };
+                          updateNodeData(id, {
+                            generated: { url: file.url, type: file.type },
+                            updatedAt: new Date().toISOString(),
+                          });
+                          setIsGalleryOpen(false);
+                        }}
+                      >
+                        Select
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </NodeLayout>
   );
 };

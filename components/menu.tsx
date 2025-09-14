@@ -14,7 +14,7 @@ import { useSubscription } from '@/providers/subscription';
 import { ArrowUpRight, ArrowUpRightIcon, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { type MouseEventHandler, useState } from 'react';
+import { useState } from 'react';
 import { Profile } from './profile';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
@@ -32,14 +32,10 @@ export const Menu = () => {
     router.push('/auth/login');
   };
 
-  const handleOpenProfile: MouseEventHandler<HTMLDivElement> = (event) => {
+  const handleOpenProfile = (event: Event) => {
     event.preventDefault();
     setDropdownOpen(false);
-
-    // shadcn/ui issue: dropdown animation causes profile modal to close immediately after opening
-    setTimeout(() => {
-      setProfileOpen(true);
-    }, 200);
+    setProfileOpen(true);
   };
 
   if (!user) {
@@ -72,6 +68,7 @@ export const Menu = () => {
           collisionPadding={8}
           sideOffset={16}
           className="w-52"
+          onCloseAutoFocus={(e) => e.preventDefault()}
         >
           <DropdownMenuLabel>
             <Avatar>
@@ -93,36 +90,36 @@ export const Menu = () => {
             )}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleOpenProfile}>
-            Profile
+          <DropdownMenuItem onSelect={handleOpenProfile}>
+            Профиль
           </DropdownMenuItem>
           {isSubscribed && (
             <DropdownMenuItem asChild className="justify-between">
               <a href="/api/portal" target="_blank" rel="noopener noreferrer">
-                Billing{' '}
+                Биллинг{' '}
                 <ArrowUpRightIcon size={16} className="text-muted-foreground" />
               </a>
             </DropdownMenuItem>
           )}
           <DropdownMenuItem asChild>
             <Link href="/pricing" className="flex items-center justify-between">
-              <span>Upgrade</span>
+              <span>Обновить</span>
               <ArrowUpRight size={16} className="text-muted-foreground" />
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <a
-              href="https://github.com/haydenbleasel/tersa"
+              href="tg://resolve?phone=77066318623"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between"
             >
-              <span>Send feedback</span>
+              <span>Отправить отзыв</span>
               <ArrowUpRight size={16} className="text-muted-foreground" />
             </a>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
+          <DropdownMenuItem onClick={logout}>Выйти</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <Profile open={profileOpen} setOpen={setProfileOpen} />

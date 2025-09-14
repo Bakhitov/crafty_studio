@@ -1,8 +1,8 @@
 'use client';
 
 import {
-  type TersaModel,
-  type TersaProvider,
+  type CraftyModel,
+  type CraftyProvider,
   providers,
 } from '@/lib/providers';
 import type { GatewayLanguageModelEntry } from '@ai-sdk/gateway';
@@ -11,8 +11,8 @@ import { createContext, useContext } from 'react';
 
 export type PriceBracket = 'lowest' | 'low' | 'high' | 'highest';
 
-type TersaTextModel = TersaModel & {
-  providers: (TersaProvider & {
+type CraftyTextModel = CraftyModel & {
+  providers: (CraftyProvider & {
     model: string;
     getCost: ({ input, output }: { input: number; output: number }) => number;
   })[];
@@ -24,7 +24,7 @@ type GatewayProviderClientProps = {
 };
 
 type GatewayContextType = {
-  models: Record<string, TersaTextModel>;
+  models: Record<string, CraftyTextModel>;
 };
 
 const GatewayContext = createContext<GatewayContextType | undefined>(undefined);
@@ -85,7 +85,7 @@ export const GatewayProviderClient = ({
   children,
   models,
 }: GatewayProviderClientProps) => {
-  const textModels: Record<string, TersaTextModel> = {};
+  const textModels: Record<string, CraftyTextModel> = {};
 
   // Calculate all model costs for statistical analysis
   const allCosts = models.map((model) => {

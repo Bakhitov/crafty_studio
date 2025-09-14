@@ -32,7 +32,7 @@ export const WelcomeDemo = ({ title, description }: WelcomeDemoProps) => {
   const project = useProject();
   const { getNodes, getEdges } = useReactFlow();
   const [started, setStarted] = useState(false);
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, plan } = useSubscription();
   const stepsContainerRef = useRef<HTMLDivElement>(null);
   const [hasTextNode, setHasTextNode] = useState(false);
   const [hasFilledTextNode, setHasFilledTextNode] = useState(false);
@@ -96,7 +96,7 @@ export const WelcomeDemo = ({ title, description }: WelcomeDemoProps) => {
           </Button>
         </div>
       ),
-      complete: isSubscribed,
+      complete: isSubscribed || plan === 'hobby',
     },
     {
       instructions: (
@@ -174,7 +174,7 @@ export const WelcomeDemo = ({ title, description }: WelcomeDemoProps) => {
         <>
           That's it! You've created your first AI-powered workflow. You can
           continue to add more nodes to a canvas to create more complex flows
-          and discover the power of Tersa.
+          and discover the power of Crafty.
         </>
       ),
       action: (

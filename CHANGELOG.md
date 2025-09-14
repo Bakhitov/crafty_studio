@@ -1,8 +1,79 @@
+# v1.3.9 (Unreleased)
+
+#### ✨ Маркетинг / Лендинг
+
+- Обновлён оффер и тексты геро-секции на русском (более продающий) (`app/(unauthenticated)/home/components/hero.tsx`)
+- Переведены и переписаны секции Features/Providers на русский (`app/(unauthenticated)/home/components/features/index.tsx`, `app/(unauthenticated)/home/components/providers.tsx`)
+- Добавлен блок тарифов на главную, переиспользован `pricing/components/hero` (`app/(unauthenticated)/home/page.tsx`)
+- Локализован футер CTA на русский (`app/(unauthenticated)/components/footer.tsx`)
+- Удалены внешние ссылки и упоминания опенсорса из субфутера, локализованы пункты меню (`app/(unauthenticated)/components/sub-footer.tsx`)
+- Обновлены метаданные главной и индексной страниц (title/description) (`app/(unauthenticated)/home/page.tsx`, `app/page.tsx`)
+- Добавлены два новых демо-шаблона изображений и подключены в Features:
+  - Создан `app/(unauthenticated)/home/components/features/image-from-photo-demo.tsx`
+  - Создан `app/(unauthenticated)/home/components/features/image-combine-demo.tsx`
+  - Обновлён `app/(unauthenticated)/home/components/features/index.tsx` — замена двух повторов `ImageDemo` на новые демо
+
+#### 🐛 Auth
+
+- Улучшена обработка подтверждения email: корректная обработка ошибок `error`/`error_description` и устранение ложного сообщения «No token hash or type» при истёкших/невалидных ссылках (`app/auth/confirm/route.ts`).
+ - Скрыт соц-логин (GitHub/Twitter) на страницах входа/регистрации, оставлена только почта/пароль (`app/auth/login/page.tsx`, `app/auth/sign-up/page.tsx`).
+ - Удалён Cloudflare Turnstile из форм, а также переменная `NEXT_PUBLIC_TURNSTILE_SITE_KEY` и server-side `TURNSTILE_SECRET` из `env.example`; обновлена схема env (`lib/env.ts`), формы (`app/auth/*/components/*-form.tsx`).
+
+#### 🖼️ Изображения
+
+- Seedream: отключён водяной знак на уровне запроса к Ark для всех Seedream-моделей (`lib/models/image/ark.ts`).
+- По умолчанию используется Seedream 4.0 для генерации изображений (`lib/models/image/index.ts`).
+- Во всех демо-узлах изображений явно задана модель `seedream-4-0-250828` (`app/(unauthenticated)/home/components/features/image-demo.tsx`, `image-from-photo-demo.tsx`, `image-combine-demo.tsx`).
+- I2I: добавлено объединение Prompt (из текстовых нод) + Instructions при редактировании изображений, чтобы вместе с входными картинками учитывался и текстовый контекст (`components/nodes/image/transform.tsx`).
+
+#### 🧭 Навигация / Меню
+
+- Починен баг: модалка профиля больше не закрывается сразу после открытия из дропдауна (`components/menu.tsx`).
+- Кнопка «Отправить отзыв» теперь открывает Telegram по диплинку на номер `+77066318623` (`components/menu.tsx`).
+
+#### 📂 Галерея
+
+- Карточки в гриде больше не растягиваются по высоте экрана, выравнивание по началу строки (`components/toolbar.tsx`).
+- Удалены дублирующиеся нижние экшены в карточке файла, оставлены оверлейные кнопки (`components/toolbar.tsx`).
+
+#### 🧩 API
+
+- Добавлен endpoint биллинга админки (`app/api/admin/billing/route.ts`).
+- Добавлен endpoint `v1/credits/claim` (`app/api/v1/credits/claim/route.ts`).
+- Добавлен экшен листинга изображений (`app/actions/image/list-files.ts`).
+
+#### 🔐 Безопасность
+
+- Санитизирован `.env.example`: заменены реальные ключи и секреты на шаблонные значения.
+
+#### 🗑️ Удалено
+
+- Удалены ассеты: `app/apple-icon.png`, `app/icon.png`, `app/opengraph-image.png`.
+
+---
+
 # v1.3.8 (Wed Aug 20 2025)
 
 #### 🐛 Bug Fix
 
-- Gateway [#124](https://github.com/haydenbleasel/tersa/pull/124) ([@haydenbleasel](https://github.com/haydenbleasel))
+- Gateway [#124](https://github.com/haydenbleasel/crafty/pull/124) ([@haydenbleasel](https://github.com/haydenbleasel))
+
+#### ✨ UI Updates
+
+- Remove plus indicator from node right handle (`components/nodes/layout.tsx`)
+- Update DropNode right visual (black circle with bold plus) (`components/nodes/drop.tsx`)
+- Fix image preview modal close behavior (`components/nodes/image/transform.tsx`)
+- Add vertical separator before gallery button in bottom toolbar (`components/toolbar.tsx`)
+- Increase gallery separator contrast and thickness (`components/toolbar.tsx`)
+- Make gallery downloads use programmatic download util (`components/toolbar.tsx`)
+- Remove plus indicator on node right handle (`components/nodes/layout.tsx`)
+- Show drop-node selector only on double-clicking pane, not nodes (`components/canvas.tsx`)
+- Rename Text node label to Prompt (`lib/node-buttons.ts`, `components/nodes/text/index.tsx`)
+
+#### 🎨 UI
+
+- Remove plus indicator from node right handle (components/nodes/layout.tsx)
+- Style right-side DropNode as black circle with bold plus (components/nodes/drop.tsx)
 
 #### Authors: 1
 
@@ -14,7 +85,7 @@
 
 #### 🐛 Bug Fix
 
-- Bump form-data from 4.0.2 to 4.0.4 in the npm_and_yarn group [#112](https://github.com/haydenbleasel/tersa/pull/112) ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump form-data from 4.0.2 to 4.0.4 in the npm_and_yarn group [#112](https://github.com/haydenbleasel/crafty/pull/112) ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
 #### Authors: 1
 
@@ -26,13 +97,13 @@
 
 #### 🐛 Bug Fix
 
-- Bump @types/node from 24.0.1 to 24.0.8 [#102](https://github.com/haydenbleasel/tersa/pull/102) ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump @types/react-dom from 19.1.5 to 19.1.6 [#106](https://github.com/haydenbleasel/tersa/pull/106) ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump tailwindcss from 4.1.8 to 4.1.11 [#108](https://github.com/haydenbleasel/tersa/pull/108) ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump @types/node from 24.0.1 to 24.0.8 [#102](https://github.com/haydenbleasel/crafty/pull/102) ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump @types/react-dom from 19.1.5 to 19.1.6 [#106](https://github.com/haydenbleasel/crafty/pull/106) ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump tailwindcss from 4.1.8 to 4.1.11 [#108](https://github.com/haydenbleasel/crafty/pull/108) ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
 #### 🔩 Dependency Updates
 
-- Bump concurrently from 9.1.2 to 9.2.0 [#104](https://github.com/haydenbleasel/tersa/pull/104) ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump concurrently from 9.1.2 to 9.2.0 [#104](https://github.com/haydenbleasel/crafty/pull/104) ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
 #### Authors: 1
 
@@ -68,7 +139,7 @@
 
 #### 🐛 Bug Fix
 
-- Perplexity [#97](https://github.com/haydenbleasel/tersa/pull/97) ([@haydenbleasel](https://github.com/haydenbleasel))
+- Perplexity [#97](https://github.com/haydenbleasel/crafty/pull/97) ([@haydenbleasel](https://github.com/haydenbleasel))
 
 #### Authors: 1
 
@@ -92,7 +163,7 @@
 
 #### 🐛 Bug Fix
 
-- Bump brace-expansion from 2.0.1 to 2.0.2 in the npm_and_yarn group [#96](https://github.com/haydenbleasel/tersa/pull/96) ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump brace-expansion from 2.0.1 to 2.0.2 in the npm_and_yarn group [#96](https://github.com/haydenbleasel/crafty/pull/96) ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
 #### Authors: 1
 
@@ -104,7 +175,7 @@
 
 #### 🚀 Enhancement
 
-- Chef-model [#95](https://github.com/haydenbleasel/tersa/pull/95) ([@haydenbleasel](https://github.com/haydenbleasel))
+- Chef-model [#95](https://github.com/haydenbleasel/crafty/pull/95) ([@haydenbleasel](https://github.com/haydenbleasel))
 
 #### Authors: 1
 
@@ -158,11 +229,11 @@
 
 #### 🔩 Dependency Updates
 
-- Bump openai from 4.103.0 to 5.0.1 [#86](https://github.com/haydenbleasel/tersa/pull/86) ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump drizzle-orm from 0.43.1 to 0.44.1 [#89](https://github.com/haydenbleasel/tersa/pull/89) ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump @icons-pack/react-simple-icons from 12.8.0 to 13.0.0 [#94](https://github.com/haydenbleasel/tersa/pull/94) ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump next from 15.3.2 to 15.3.3 [#83](https://github.com/haydenbleasel/tersa/pull/83) ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump lumaai from 1.9.0 to 1.11.0 [#90](https://github.com/haydenbleasel/tersa/pull/90) ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump openai from 4.103.0 to 5.0.1 [#86](https://github.com/haydenbleasel/crafty/pull/86) ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump drizzle-orm from 0.43.1 to 0.44.1 [#89](https://github.com/haydenbleasel/crafty/pull/89) ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump @icons-pack/react-simple-icons from 12.8.0 to 13.0.0 [#94](https://github.com/haydenbleasel/crafty/pull/94) ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump next from 15.3.2 to 15.3.3 [#83](https://github.com/haydenbleasel/crafty/pull/83) ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump lumaai from 1.9.0 to 1.11.0 [#90](https://github.com/haydenbleasel/crafty/pull/90) ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
 #### Authors: 2
 
@@ -308,7 +379,7 @@
 
 #### 🚀 Enhancement
 
-- Replicate [#81](https://github.com/haydenbleasel/tersa/pull/81) ([@haydenbleasel](https://github.com/haydenbleasel))
+- Replicate [#81](https://github.com/haydenbleasel/crafty/pull/81) ([@haydenbleasel](https://github.com/haydenbleasel))
 
 #### Authors: 1
 
@@ -332,7 +403,7 @@
 
 #### 🐛 Bug Fix
 
-- Add Black Forest Labs Flux models [#79](https://github.com/haydenbleasel/tersa/pull/79) ([@haydenbleasel](https://github.com/haydenbleasel))
+- Add Black Forest Labs Flux models [#79](https://github.com/haydenbleasel/crafty/pull/79) ([@haydenbleasel](https://github.com/haydenbleasel))
 
 #### Authors: 1
 
@@ -404,7 +475,7 @@
 
 #### 🚀 Enhancement
 
-- Onboarding [#78](https://github.com/haydenbleasel/tersa/pull/78) ([@haydenbleasel](https://github.com/haydenbleasel))
+- Onboarding [#78](https://github.com/haydenbleasel/crafty/pull/78) ([@haydenbleasel](https://github.com/haydenbleasel))
 
 #### Authors: 1
 
@@ -416,7 +487,7 @@
 
 #### 🐛 Bug Fix
 
-- Reasoning [#77](https://github.com/haydenbleasel/tersa/pull/77) ([@haydenbleasel](https://github.com/haydenbleasel))
+- Reasoning [#77](https://github.com/haydenbleasel/crafty/pull/77) ([@haydenbleasel](https://github.com/haydenbleasel))
 
 #### Authors: 1
 
@@ -579,7 +650,7 @@
 
 #### ⚠️ Pushed to `main`
 
-- Merge branch 'main' of https://github.com/haydenbleasel/tersa ([@haydenbleasel](https://github.com/haydenbleasel))
+- Merge branch 'main' of https://github.com/haydenbleasel/crafty ([@haydenbleasel](https://github.com/haydenbleasel))
 - Add support for Claude 4 ([@haydenbleasel](https://github.com/haydenbleasel))
 - Misc fixes ([@haydenbleasel](https://github.com/haydenbleasel))
 
@@ -709,7 +780,7 @@ Thank you, Karel Vuong ([@karelvuong](https://github.com/karelvuong)), for all y
 
 #### 🐛 Bug Fix
 
-- fix: kibo link in readme [#53](https://github.com/haydenbleasel/tersa/pull/53) ([@karelvuong](https://github.com/karelvuong))
+- fix: kibo link in readme [#53](https://github.com/haydenbleasel/crafty/pull/53) ([@karelvuong](https://github.com/karelvuong))
 
 #### Authors: 1
 
@@ -902,7 +973,7 @@ Thank you, Karel Vuong ([@karelvuong](https://github.com/karelvuong)), for all y
 
 #### 💥 Breaking Change
 
-- v1 [#51](https://github.com/haydenbleasel/tersa/pull/51) ([@haydenbleasel](https://github.com/haydenbleasel))
+- v1 [#51](https://github.com/haydenbleasel/crafty/pull/51) ([@haydenbleasel](https://github.com/haydenbleasel))
 
 #### Authors: 1
 
@@ -918,8 +989,8 @@ Thank you, Hayden Bleasel ([@haydenbleasel](https://github.com/haydenbleasel)), 
 
 #### 🐛 Bug Fix
 
-- Launch [#49](https://github.com/haydenbleasel/tersa/pull/49) ([@haydenbleasel](https://github.com/haydenbleasel))
-- Migrate to Supabase [#1](https://github.com/haydenbleasel/tersa/pull/1) ([@haydenbleasel](https://github.com/haydenbleasel))
+- Launch [#49](https://github.com/haydenbleasel/crafty/pull/49) ([@haydenbleasel](https://github.com/haydenbleasel))
+- Migrate to Supabase [#1](https://github.com/haydenbleasel/crafty/pull/1) ([@haydenbleasel](https://github.com/haydenbleasel))
 
 #### ⚠️ Pushed to `main`
 

@@ -1,9 +1,10 @@
 {
-  "name": "tersa",
+  "name": "crafty",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "concurrently -n \"Next.js,Supabase,Email,Stripe\" \"next dev --turbopack\" \"npx supabase start\" \"email dev --port 3001\" \"stripe listen --forward-to localhost:3000/api/webhooks/stripe\"",
+    "dev:cloud": "concurrently -n \"Next.js,Email,Stripe\" \"next dev --turbopack\" \"email dev --port 3001\" \"stripe listen --forward-to localhost:3000/api/webhooks/stripe\"",
     "bump-deps": "npx npm-check-updates -u && pnpm install",
     "bump-ui": "npx shadcn@latest add --all --overwrite",
     "build": "next build --turbopack",
@@ -117,6 +118,7 @@
     "react-fast-marquee": "^1.6.5",
     "react-hook-form": "^7.57.0",
     "react-hotkeys-hook": "^5.1.0",
+    "react-icons": "^5.5.0",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^3.0.3",
     "react-tweet": "^3.2.2",

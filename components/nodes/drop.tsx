@@ -10,6 +10,7 @@ import { nodeButtons } from '@/lib/node-buttons';
 import { type XYPosition, useReactFlow } from '@xyflow/react';
 import { nanoid } from 'nanoid';
 import { useEffect, useRef } from 'react';
+import { PlusIcon } from 'lucide-react';
 import { NodeLayout } from './layout';
 
 type DropNodeProps = {
@@ -97,9 +98,23 @@ export const DropNode = ({ data, id }: DropNodeProps) => {
     };
   }, [deleteElements, id]);
 
+  const isRightDrop = data.isSource === false;
+
   return (
     <div ref={ref}>
       <NodeLayout id={id} data={data} type="drop" title="Add a new node">
+        {isRightDrop ? (
+          <div className="flex items-center justify-center p-2">
+            <button
+              type="button"
+              className="flex size-8 items-center justify-center rounded-full bg-black text-white shadow"
+              onClick={() => {}}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <PlusIcon size={16} strokeWidth={3} />
+            </button>
+          </div>
+        ) : null}
         <Command className="rounded-lg">
           <CommandInput placeholder="Type a command or search..." />
           <CommandList>

@@ -1,14 +1,14 @@
 import { openai } from '@ai-sdk/openai';
 import type { TranscriptionModel } from 'ai';
-import { type TersaModel, type TersaProvider, providers } from '../providers';
+import { type CraftyModel, type CraftyProvider, providers } from '../providers';
 
-type TersaTranscriptionModel = TersaModel & {
-  providers: (TersaProvider & {
+type CraftyTranscriptionModel = CraftyModel & {
+  providers: (CraftyProvider & {
     model: TranscriptionModel;
   })[];
 };
 
-export const transcriptionModels: Record<string, TersaTranscriptionModel> = {
+export const transcriptionModels: Record<string, CraftyTranscriptionModel> = {
   'gpt-4o-mini-transcribe': {
     label: 'GPT-4o Mini Transcribe',
     chef: providers.openai,

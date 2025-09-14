@@ -51,12 +51,8 @@ export const Hero = ({ announcement, buttons }: HeroProps) => (
           <Link
             href={announcement.link}
             className="relative inline-flex items-center justify-between gap-2 rounded-full border px-4 py-1.5 text-sm tracking-[-0.01rem] transition-all duration-300 ease-in-out hover:border-primary hover:bg-primary/5 hover:text-primary"
-            target={announcement.link.startsWith('http') ? '_blank' : '_self'}
-            rel={
-              announcement.link.startsWith('http')
-                ? 'noopener noreferrer'
-                : undefined
-            }
+            target={announcement.link.startsWith('http') ? '_self' : '_self'}
+            rel={undefined}
           >
             {announcement.title}
             <ArrowRightIcon size={16} />
@@ -64,17 +60,13 @@ export const Hero = ({ announcement, buttons }: HeroProps) => (
         )}
 
         <h1 className="mt-6 mb-5 text-center font-medium text-4xl tracking-[-0.12rem] md:text-6xl">
-          A
-          <span className="mx-1 font-semibold font-serif text-5xl italic md:text-7xl">
-            visual
-          </span>{' '}
-          AI playground
+          Платформа генерации AI‑контента для вашего бизнеса
         </h1>
 
         <p className="max-w-2xl text-center text-muted-foreground tracking-[-0.01rem] sm:text-lg">
-          Tersa is an open source canvas for building AI workflows. Drag, drop
-          connect and run nodes to build your own workflows powered by various
-          industry-leading AI models.
+          Crafty Studio помогает быстро создавать посты, изображения, видео и озвучку.
+          Соберите свой конвейер из готовых узлов: перетаскивайте, соединяйте и запускайте —
+          без сложных настроек и лишней рутины.
         </p>
       </div>
     </div>
