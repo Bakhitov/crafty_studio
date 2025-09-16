@@ -20,7 +20,7 @@ export const translateToEnglish = async (input: string | undefined | null): Prom
 	const shouldTranslate = hasCyrillic || hasCJK || hasArabic;
 	if (!shouldTranslate) return text;
 
-	const modelId = 'gpt-4.1-mini';
+	const modelId = 'stealth/sonoma-dusk-alpha';
 	const system = [
 		'You are a translation engine.',
 		'Task: translate the user input to English.',

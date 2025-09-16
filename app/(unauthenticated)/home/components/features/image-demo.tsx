@@ -7,7 +7,7 @@ const nodes: Node[] = [
     type: 'text',
     position: { x: 0, y: 0 },
     data: {
-      text: 'A wild field of delphiniums',
+      text: 'Девушка (казашка) в летнем вечернем цветочном платье в спокойном городском фоне',
       content: {
         type: 'doc',
         content: [
@@ -16,7 +16,7 @@ const nodes: Node[] = [
             content: [
               {
                 type: 'text',
-                text: 'A wild field of delphiniums',
+                text: 'Девушка (казашка) в летнем вечернем цветочном платье в спокойном городском фоне',
               },
             ],
           },
@@ -31,10 +31,10 @@ const nodes: Node[] = [
     data: {
       model: 'seedream-4-0-250828',
       generated: {
-        url: '/demo/delphiniums-anime.jpg',
+        url: '/demo/girl.jpg',
         type: 'image/jpeg',
       },
-      instructions: 'Make it anime style.',
+      instructions: 'Девушкой идет по городу.',
     },
     origin: [0, 0.5],
   },

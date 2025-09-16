@@ -2,7 +2,7 @@ import { currentUserProfile } from '@/lib/auth';
 import { isManualBilling, getManualCredits, setManualPlan, setManualCredits } from '@/lib/billing';
 import { NextResponse } from 'next/server';
 
-const HOBBY_INITIAL_CREDITS = 200;
+const HOBBY_INITIAL_CREDITS = 50;
 
 export const POST = async () => {
   try {

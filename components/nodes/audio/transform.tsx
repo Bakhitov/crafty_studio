@@ -106,6 +106,10 @@ export const AudioTransform = ({
       toast.success('Audio generated successfully');
 
       setTimeout(() => mutate('credits'), 5000);
+      // Сообщаем галерее, что список файлов изменился
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('user-files:changed'));
+      }
     } catch (error) {
       handleError('Error generating audio', error);
     } finally {
@@ -118,7 +122,20 @@ export const AudioTransform = ({
       children: (
         <ModelSelector
           value={modelId}
-          options={speechModels}
+          options={Object.fromEntries(
+            Object.entries(speechModels).map(([key, model]) => {
+              const isOpenAI = model.chef.id === 'openai';
+              const disabled = !isOpenAI;
+              return [
+                key,
+                {
+                  ...model,
+                  disabled,
+                  label: disabled ? `${model.label} (скоро)` : model.label,
+                },
+              ];
+            })
+          )}
           key={id}
           className="w-[200px] rounded-full"
           onChange={(value) => updateNodeData(id, { model: value })}

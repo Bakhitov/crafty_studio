@@ -8,8 +8,8 @@ const nodes: Node[] = [
     position: { x: 0, y: 0 },
     data: {
       content: {
-        url: '/demo/delphiniums-anime.jpg',
-        type: 'image/jpeg',
+        url: '/demo/girl-blue.png',
+        type: 'image/png',
       },
       description: 'Фото A',
     },
@@ -21,7 +21,7 @@ const nodes: Node[] = [
     position: { x: 0, y: 220 },
     data: {
       content: {
-        url: '/demo/delphiniums-fantasy.jpg',
+        url: '/demo/boy.jpeg',
         type: 'image/jpeg',
       },
       description: 'Фото B',
@@ -34,10 +34,10 @@ const nodes: Node[] = [
     position: { x: 600, y: 110 },
     data: {
       model: 'seedream-4-0-250828',
-      instructions: 'Комбинировать A и B в единый визуал',
+      instructions: 'Парень и девушка идут вместе',
       generated: {
-        url: '/demo/delphiniums-anime.jpg',
-        type: 'image/jpeg',
+        url: '/demo/boy-girl.png',
+        type: 'image/png',
       },
       size: '1024x1024',
     },

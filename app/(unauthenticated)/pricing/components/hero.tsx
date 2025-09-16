@@ -64,7 +64,7 @@ export const Hero = ({ currentPlan, authenticated, manualBilling }: HeroProps) =
       yearlyPrice: 0,
       features: [
         {
-          label: '200 кредитов / месяц',
+          label: '50 кредитов / месяц',
           icon: CoinsIcon,
         },
         {

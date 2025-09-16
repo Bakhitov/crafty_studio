@@ -42,30 +42,32 @@ export const TextPrimitive = ({
       data={data}
       title={title}
       type={type}
-      className="overflow-hidden p-0"
+      className="overflow-hidden"
     >
-      <div
-        className="nodrag nowheel select-text h-full max-h-[30rem] overflow-auto"
-        onPointerDown={(e) => {
-          // Allow caret placement and text selection inside the editor
-          e.stopPropagation();
-        }}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-        }}
-      >
-        <EditorProvider
-          onCreate={handleCreate}
-          immediatelyRender={false}
-          content={data.content}
-          placeholder="Start typing..."
-          className={cn(
-            'prose prose-sm dark:prose-invert size-full p-6',
-            '[&_p:first-child]:mt-0',
-            '[&_p:last-child]:mb-0'
-          )}
-          onUpdate={handleUpdate}
-        />
+      <div className="p-2">
+        <div
+          className="nodrag nowheel select-text h-full max-h-[30rem] overflow-auto"
+          onPointerDown={(e) => {
+            // Allow caret placement and text selection inside the editor
+            e.stopPropagation();
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          <EditorProvider
+            onCreate={handleCreate}
+            immediatelyRender={false}
+            content={data.content}
+            placeholder="Start typing..."
+            className={cn(
+              'prose prose-sm dark:prose-invert size-full p-6',
+              '[&_p:first-child]:mt-0',
+              '[&_p:last-child]:mb-0'
+            )}
+            onUpdate={handleUpdate}
+          />
+        </div>
       </div>
     </NodeLayout>
   );

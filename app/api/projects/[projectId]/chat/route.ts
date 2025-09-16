@@ -6,7 +6,7 @@ import { database } from '@/lib/database'
 import { projectMessages, projects } from '@/schema'
 import { eq } from 'drizzle-orm'
 import { convertToModelMessages, streamText } from 'ai'
-import { openai } from '@ai-sdk/openai'
+import { gateway } from '@/lib/gateway'
 import { AGENT_GUIDE_MD, SYSTEM_BASE } from '@/lib/agent/instructions'
 
 export const maxDuration = 30
@@ -95,7 +95,7 @@ export const POST = async (
       : []
 
     const result = streamText({
-      model: openai('gpt-4.1-mini'),
+      model: gateway('stealth/sonoma-sky-alpha'),
       system: systemPrompt,
       messages: convertToModelMessages(trimmedMessages),
       onFinish: async ({ usage, text }) => {
@@ -109,17 +109,14 @@ export const POST = async (
           const inputTokens = usage.inputTokens ?? 0
           const outputTokens = usage.outputTokens ?? 0
 
-          // GPT-4.1 Mini тарифы (USD за 1M токенов)
-          const USD_PER_M_INPUT = 0.40
-          const USD_PER_M_OUTPUT = 1.60
-          // Конверсия $ -> кредиты (из Seedream: $1 = 200 кредитов)
-          const CREDITS_PER_USD = 200
-
-          const costUsd =
-            (inputTokens / 1_000_000) * USD_PER_M_INPUT +
-            (outputTokens / 1_000_000) * USD_PER_M_OUTPUT
-          // Единая формула как в обычном чате: кредиты без множителя и потолка
-          const costCredits = costUsd * CREDITS_PER_USD
+          // Получаем тарифы модели из Gateway (USD за 1M токенов)
+          const { models } = await gateway.getAvailableModels()
+          const sky = models.find((m) => m.id === 'stealth/sonoma-sky-alpha')
+          const inputPrice = sky?.pricing?.input ? Number.parseFloat(sky.pricing.input) : 0
+          const outputPrice = sky?.pricing?.output ? Number.parseFloat(sky.pricing.output) : 0
+          const costUsd = (inputTokens / 1_000_000) * inputPrice + (outputTokens / 1_000_000) * outputPrice
+          // Конверсия $ -> кредиты: $1 = 200 кредитов
+          const costCredits = costUsd * 200
 
           await trackCreditUsage({
             action: 'project-chat',

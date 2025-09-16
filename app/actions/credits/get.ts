@@ -6,7 +6,7 @@ import { parseError } from '@/lib/error/parse';
 import { stripe } from '@/lib/stripe';
 import { getManualCredits, isManualBilling } from '@/lib/billing';
 
-const HOBBY_CREDITS = 200;
+const HOBBY_CREDITS = 50;
 
 export const getCredits = async (): Promise<
   | {

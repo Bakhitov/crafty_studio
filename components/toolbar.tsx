@@ -136,7 +136,7 @@ const GalleryButton = ({
   const openGallery = useCallback(async (tab?: typeof activeTab) => {
     setOpen(true);
     if (tab) setActiveTab(tab);
-    if (files || loading) return;
+    // Всегда рефетчим при открытии, чтобы видеть новые файлы сразу
     setLoading(true);
     try {
       const res = await listUserFiles();
@@ -144,7 +144,7 @@ const GalleryButton = ({
     } finally {
       setLoading(false);
     }
-  }, [files, loading]);
+  }, []);
 
   useEffect(() => {
     if (openWithTab) {
@@ -152,6 +152,24 @@ const GalleryButton = ({
       onIntentConsumed?.();
     }
   }, [openWithTab, openGallery, onIntentConsumed]);
+
+  // Авто-обновление, если галерея открыта и пришло событие изменения файлов
+  useEffect(() => {
+    const handler = () => {
+      if (!open) return;
+      (async () => {
+        setLoading(true);
+        try {
+          const res = await listUserFiles();
+          if ('files' in res) setFiles(res.files);
+        } finally {
+          setLoading(false);
+        }
+      })();
+    };
+    window.addEventListener('user-files:changed', handler as EventListener);
+    return () => window.removeEventListener('user-files:changed', handler as EventListener);
+  }, [open]);
 
   return (
     <>

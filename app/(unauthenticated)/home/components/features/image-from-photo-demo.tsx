@@ -8,7 +8,7 @@ const nodes: Node[] = [
     position: { x: 0, y: 20 },
     data: {
       content: {
-        url: '/demo/delphiniums-anime.jpg',
+        url: '/demo/girl.jpg',
         type: 'image/jpeg',
       },
       description: 'Пример исходной фотографии',
@@ -21,10 +21,10 @@ const nodes: Node[] = [
     position: { x: 600, y: 20 },
     data: {
       model: 'seedream-4-0-250828',
-      instructions: 'Сгенерировать вариации по исходной фотографии',
+      instructions: 'Изменить платье на синее',
       generated: {
-        url: '/demo/delphiniums-fantasy.jpg',
-        type: 'image/jpeg',
+        url: '/demo/girl-blue.png',
+        type: 'image/png',
       },
       size: '1024x1024',
     },

@@ -29,15 +29,13 @@ type VideoTransformProps = VideoNodeProps & {
 };
 
 const getDefaultModel = (models: typeof videoModels) => {
-  const defaultModel = Object.entries(models).find(
-    ([_, model]) => model.default
-  );
+  // Предпочитаем Seedance, если доступен
+  const seedance = Object.keys(models).find((id) => id.startsWith('seedance-'));
+  if (seedance) return seedance;
 
-  if (!defaultModel) {
-    throw new Error('No default model found');
-  }
-
-  return defaultModel[0];
+  const fallback = Object.entries(models).find(([_, model]) => model.default);
+  if (!fallback) throw new Error('No default model found');
+  return fallback[0];
 };
 
 export const VideoTransform = ({
@@ -161,6 +159,10 @@ export const VideoTransform = ({
       toast.success('Video generated successfully');
 
       setTimeout(() => mutate('credits'), 5000);
+      // Сообщаем галерее, что список файлов изменился
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('user-files:changed'));
+      }
     } catch (error) {
       handleError('Error generating video', error);
     } finally {
@@ -173,7 +175,20 @@ export const VideoTransform = ({
       children: (
         <ModelSelector
           value={modelId}
-          options={videoModels}
+          options={Object.fromEntries(
+            Object.entries(videoModels).map(([key, model]) => {
+              const isArk = model.chef.id === 'ark';
+              const disabled = !isArk;
+              return [
+                key,
+                {
+                  ...model,
+                  disabled,
+                  label: disabled ? `${model.label} (скоро)` : model.label,
+                },
+              ];
+            })
+          )}
           key={id}
           className="w-[200px] rounded-full"
           onChange={(value) => updateNodeData(id, { model: value })}

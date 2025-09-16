@@ -115,7 +115,7 @@ export const Menu = () => {
               rel="noopener noreferrer"
               className="flex items-center justify-between"
             >
-              <span>Отправить отзыв</span>
+              <span>Техподдержка</span>
               <ArrowUpRight size={16} className="text-muted-foreground" />
             </a>
           </DropdownMenuItem>

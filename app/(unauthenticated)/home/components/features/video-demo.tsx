@@ -7,7 +7,7 @@ const nodes: Node[] = [
     type: 'text',
     position: { x: 0, y: 0 },
     data: {
-      text: 'A wild field of delphiniums',
+      text: 'Парень неожиданно целует девушку',
       content: {
         type: 'doc',
         content: [
@@ -16,7 +16,7 @@ const nodes: Node[] = [
             content: [
               {
                 type: 'text',
-                text: 'A wild field of delphiniums',
+                text: 'Парень неожиданно целует девушку',
               },
             ],
           },
@@ -30,8 +30,8 @@ const nodes: Node[] = [
     position: { x: 0, y: 300 },
     data: {
       content: {
-        url: '/demo/delphiniums-anime.jpg',
-        type: 'image/jpeg',
+        url: '/demo/boy-girl.png',
+        type: 'image/png',
       },
     },
     origin: [0, 0.5],
@@ -42,10 +42,10 @@ const nodes: Node[] = [
     position: { x: 600, y: 200 },
     data: {
       generated: {
-        url: '/demo/delphiniums.mp4',
+        url: '/demo/boy-girl.mp4',
         type: 'video/mp4',
       },
-      instructions: 'Make the flowers move softly in the wind.',
+      instructions: 'Атмосфера видео лёгкая и живая, как из кино: солнечный день',
     },
     origin: [0, 0.5],
   },

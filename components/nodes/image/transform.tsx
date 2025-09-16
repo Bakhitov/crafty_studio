@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAnalytics } from '@/hooks/use-analytics';
 // Галерея доступна через тулбар; в ноде оставляем только предпросмотр
 import { handleError } from '@/lib/error/handle';
+import { download } from '@/lib/download';
 import { imageModels } from '@/lib/models/image';
 import { getImagesFromImageNodes, getTextFromTextNodes } from '@/lib/xyflow';
 import { useProject } from '@/providers/project';
@@ -18,6 +19,7 @@ import {
   XIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  DownloadIcon,
 } from 'lucide-react';
 import Image from 'next/image';
 import { ImageZoom } from '@/components/ui/kibo-ui/image-zoom';
@@ -141,6 +143,10 @@ export const ImageTransform = ({
       toast.success('Image generated successfully');
 
       setTimeout(() => mutate('credits'), 5000);
+      // Сообщаем галерее, что список файлов изменился
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('user-files:changed'));
+      }
     } catch (error) {
       handleError('Error generating image', error);
     } finally {
@@ -166,15 +172,22 @@ export const ImageTransform = ({
 
   const toolbar = useMemo<ComponentProps<typeof NodeLayout>['toolbar']>(() => {
     const availableModels = Object.fromEntries(
-      Object.entries(imageModels).map(([key, model]) => [
-        key,
-        {
-          ...model,
-          disabled: hasIncomingImageNodes
+      Object.entries(imageModels).map(([key, model]) => {
+        const isArk = model.chef.id === 'ark';
+        const shouldDisable = !isArk
+          ? true
+          : hasIncomingImageNodes
             ? !model.supportsEdit
-            : model.disabled,
-        },
-      ])
+            : false;
+        return [
+          key,
+          {
+            ...model,
+            disabled: shouldDisable,
+            label: shouldDisable ? `${model.label} (скоро)` : model.label,
+          },
+        ];
+      })
     );
 
     const items: ComponentProps<typeof NodeLayout>['toolbar'] = [
@@ -233,6 +246,22 @@ export const ImageTransform = ({
             ),
           }
     );
+
+    if (data.generated?.url) {
+      items.push({
+        tooltip: 'Download',
+        children: (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            onClick={() => download(data.generated, id, 'png')}
+          >
+            <DownloadIcon size={12} />
+          </Button>
+        ),
+      });
+    }
 
     return items;
   }, [
