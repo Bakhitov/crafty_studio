@@ -54,6 +54,13 @@ export const WelcomeDemo = ({ title, description }: WelcomeDemoProps) => {
     }
 
     try {
+      // Если ручной биллинг активен — попытаемся сразу выдать Hobby
+      try {
+        await fetch('/api/v1/credits/claim', { method: 'POST' });
+      } catch {
+        // игнорируем: не критично для завершения онбординга
+      }
+
       const response = await updateProfileAction(user.id, {
         onboardedAt: new Date(),
       });
