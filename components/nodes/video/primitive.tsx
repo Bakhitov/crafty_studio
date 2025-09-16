@@ -129,8 +129,8 @@ export const VideoPrimitive = ({
                 <XIcon size={18} />
               </button>
               <div className="relative z-[111] h-full w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
-                <VideoPlayer defaultMuted style={{ width: '100%', height: 'auto' }}>
-                  <VideoPlayerContent src={data.content.url} playsInline controls autoPlay />
+                <VideoPlayer style={{ width: '100%', height: 'auto' }}>
+                  <VideoPlayerContent src={data.content.url} playsInline controls autoPlay muted />
                   <VideoPlayerControlBar>
                     <VideoPlayerPlayButton />
                     <VideoPlayerSeekBackwardButton />

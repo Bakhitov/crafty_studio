@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { LoginForm } from './components/login-form';
 
 const title = 'Вход';
@@ -25,7 +26,9 @@ const LoginPage = () => (
       <CardDescription>{description}</CardDescription>
     </CardHeader>
     <CardContent className="rounded-b-xl border-b bg-background pb-8">
-      <LoginForm />
+      <Suspense fallback={null}>
+        <LoginForm />
+      </Suspense>
     </CardContent>
     <CardFooter className="flex items-center justify-center gap-1 p-4 text-xs">
       <p>Нет аккаунта?</p>
