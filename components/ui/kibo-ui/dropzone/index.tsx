@@ -133,15 +133,15 @@ export const DropzoneContent = ({
       <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
         <UploadIcon size={16} />
       </div>
-      <p className="my-2 w-full truncate font-medium text-sm">
+      <p className="my-2 w-full truncate text-center font-medium text-sm">
         {src.length > maxLabelItems
-          ? `${new Intl.ListFormat('en').format(
+          ? `${new Intl.ListFormat('ru').format(
               src.slice(0, maxLabelItems).map((file) => file.name)
-            )} and ${src.length - maxLabelItems} more`
-          : new Intl.ListFormat('en').format(src.map((file) => file.name))}
+            )} и ещё ${src.length - maxLabelItems}`
+          : new Intl.ListFormat('ru').format(src.map((file) => file.name))}
       </p>
-      <p className="w-full text-muted-foreground text-xs">
-        Drag and drop or click to replace
+      <p className="w-full text-center text-muted-foreground text-xs">
+        Перетащите файлы или кликните, чтобы заменить
       </p>
     </div>
   );
@@ -169,16 +169,16 @@ export const DropzoneEmptyState = ({
   let caption = '';
 
   if (accept) {
-    caption += 'Accepts ';
-    caption += new Intl.ListFormat('en').format(Object.keys(accept));
+    caption += 'Поддерживаемые типы: ';
+    caption += new Intl.ListFormat('ru').format(Object.keys(accept));
   }
 
   if (minSize && maxSize) {
-    caption += ` between ${renderBytes(minSize)} and ${renderBytes(maxSize)}`;
+    caption += ` от ${renderBytes(minSize)} до ${renderBytes(maxSize)}`;
   } else if (minSize) {
-    caption += ` at least ${renderBytes(minSize)}`;
+    caption += ` не менее ${renderBytes(minSize)}`;
   } else if (maxSize) {
-    caption += ` less than ${renderBytes(maxSize)}`;
+    caption += ` не более ${renderBytes(maxSize)}`;
   }
 
   return (
@@ -186,13 +186,13 @@ export const DropzoneEmptyState = ({
       <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
         <UploadIcon size={16} />
       </div>
-      <p className="my-2 w-full truncate font-medium text-sm">
-        Upload {maxFiles === 1 ? 'a file' : 'files'}
+      <p className="my-2 w-full truncate text-center font-medium text-sm">
+        Загрузите {maxFiles === 1 ? 'файл' : 'файлы'}
       </p>
-      <p className="w-full truncate text-muted-foreground text-xs">
-        Drag and drop or click to upload
+      <p className="w-full truncate text-center text-muted-foreground text-xs">
+        Перетащите файлы или кликните, чтобы загрузить
       </p>
-      {caption && <p className="text-muted-foreground text-xs">{caption}.</p>}
+      {caption && <p className="max-w-full truncate text-center text-muted-foreground text-xs">{caption}.</p>}
     </div>
   );
 };

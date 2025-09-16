@@ -6,6 +6,8 @@ import {
   setManualPlan,
   getManualCredits,
   getManualPlan,
+  hasClaimedHobby,
+  markHobbyClaimed,
 } from '@/lib/billing';
 import { env } from '@/lib/env';
 
@@ -36,7 +38,13 @@ export const POST = async (req: Request) => {
   const prevCredits = await getManualCredits(userId);
 
   if (typeof plan === 'string') {
+    if (plan === 'hobby' && (await hasClaimedHobby(userId))) {
+      return new Response('Hobby можно выдать только один раз для пользователя', { status: 400 });
+    }
     await setManualPlan(userId, plan);
+    if (plan === 'hobby') {
+      await markHobbyClaimed(userId);
+    }
   }
 
   if (typeof credits === 'number') {

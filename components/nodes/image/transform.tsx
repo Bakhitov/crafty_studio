@@ -5,21 +5,22 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useAnalytics } from '@/hooks/use-analytics';
-import { download } from '@/lib/download';
+// Галерея доступна через тулбар; в ноде оставляем только предпросмотр
 import { handleError } from '@/lib/error/handle';
 import { imageModels } from '@/lib/models/image';
 import { getImagesFromImageNodes, getTextFromTextNodes } from '@/lib/xyflow';
 import { useProject } from '@/providers/project';
 import { getIncomers, useReactFlow } from '@xyflow/react';
 import {
-  ClockIcon,
-  DownloadIcon,
   Loader2Icon,
   PlayIcon,
   RotateCcwIcon,
   XIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from 'lucide-react';
 import Image from 'next/image';
+import { ImageZoom } from '@/components/ui/kibo-ui/image-zoom';
 import {
   type ChangeEventHandler,
   type ComponentProps,
@@ -34,7 +35,7 @@ import { mutate } from 'swr';
 import type { ImageNodeProps } from '.';
 import { ModelSelector } from '../model-selector';
 import { ImageSizeSelector } from './image-size-selector';
-import { listUserFiles, type UserFile } from '@/app/actions/image/list-files';
+
 
 type ImageTransformProps = ImageNodeProps & {
   title: string;
@@ -100,6 +101,18 @@ export const ImageTransform = ({
       ]
         .filter(Boolean)
         .join('\n');
+
+      // Notify: Seedream 3.x (Ark) supports only one input image
+      const providerName = (selectedModel.providers?.[0]?.model as { provider?: string })?.provider;
+      const isSeedream3Ark =
+        providerName === 'ark' &&
+        (modelId.startsWith('seedream-3') || modelId.startsWith('seededit-3'));
+
+      if (isSeedream3Ark && imageNodes.length > 1) {
+        toast.error('Seedream 3 supports only one input image. Please use only one.');
+        setLoading(false);
+        return;
+      }
 
       const response = imageNodes.length
         ? await editImageAction({
@@ -221,38 +234,6 @@ export const ImageTransform = ({
           }
     );
 
-    // (removed) Gallery button — теперь в нижнем глобальном тулбаре
-
-    if (data.generated) {
-      items.push({
-        tooltip: 'Download',
-        children: (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
-            onClick={() => download(data.generated, id, 'png')}
-          >
-            <DownloadIcon size={12} />
-          </Button>
-        ),
-      });
-    }
-
-    if (data.updatedAt) {
-      items.push({
-        tooltip: `Last updated: ${new Intl.DateTimeFormat('en-US', {
-          dateStyle: 'short',
-          timeStyle: 'short',
-        }).format(new Date(data.updatedAt))}`,
-        children: (
-          <Button size="icon" variant="ghost" className="rounded-full">
-            <ClockIcon size={12} />
-          </Button>
-        ),
-      });
-    }
-
     return items;
   }, [
     modelId,
@@ -283,25 +264,53 @@ export const ImageTransform = ({
   useEffect(() => {
     setMounted(true);
   }, []);
-  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-  const [gallery, setGallery] = useState<UserFile[] | null>(null);
-  const [galleryLoading, setGalleryLoading] = useState(false);
 
-  const openGallery = useCallback(async () => {
-    if (galleryLoading) return;
-    setIsGalleryOpen(true);
-    if (gallery) return;
-    setGalleryLoading(true);
-    try {
-      const result = await listUserFiles();
-      if ('files' in result) setGallery(result.files);
-    } finally {
-      setGalleryLoading(false);
-    }
-  }, [gallery, galleryLoading]);
+  const totalVersions = Array.isArray(data.versions) ? data.versions.length : 0;
+  const currentIndex = Math.min(
+    Math.max(data.versionIndex ?? (totalVersions ? totalVersions - 1 : 0), 0),
+    Math.max(totalVersions - 1, 0)
+  );
+
+  const topCenter = (
+    totalVersions > 0 ? (
+      <div className="flex items-center gap-2">
+        <Button
+          size="icon"
+          variant="ghost"
+          className="rounded-full"
+          onClick={() => {
+            const newIndex = Math.max(0, currentIndex - 1);
+            const next = data.versions?.[newIndex];
+            if (next) updateNodeData(id, { versionIndex: newIndex, generated: next });
+          }}
+          disabled={currentIndex <= 0}
+          aria-label="Previous version"
+        >
+          <ChevronLeftIcon size={14} />
+        </Button>
+        <span className="text-xs text-muted-foreground">
+          {currentIndex + 1}/{totalVersions}
+        </span>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="rounded-full"
+          onClick={() => {
+            const newIndex = Math.min(totalVersions - 1, currentIndex + 1);
+            const next = data.versions?.[newIndex];
+            if (next) updateNodeData(id, { versionIndex: newIndex, generated: next });
+          }}
+          disabled={currentIndex >= totalVersions - 1}
+          aria-label="Next version"
+        >
+          <ChevronRightIcon size={14} />
+        </Button>
+      </div>
+    ) : null
+  );
 
   return (
-    <NodeLayout id={id} data={data} type={type} title={title} toolbar={toolbar}>
+    <NodeLayout id={id} data={data} type={type} title={title} toolbar={toolbar} topCenter={topCenter}>
       {loading && (
         <Skeleton
           className="flex w-full animate-pulse items-center justify-center rounded-b-xl"
@@ -325,123 +334,27 @@ export const ImageTransform = ({
         </div>
       )}
       {!loading && data.generated?.url && (
-        <Image
-          src={data.generated.url}
-          alt="Generated image"
-          width={1000}
-          height={1000}
-          className="w-full rounded-b-xl object-cover cursor-zoom-in"
-          onClick={() => setIsPreviewOpen(true)}
-        />
+        <ImageZoom>
+          <Image
+            src={data.generated.url}
+            alt="Generated image"
+            width={1000}
+            height={1000}
+            className="w-full rounded-b-xl object-cover"
+            sizes="(min-width:1024px) 800px, 100vw"
+            quality={70}
+            loading="lazy"
+          />
+        </ImageZoom>
       )}
+
       <Textarea
         value={data.instructions ?? ''}
         onChange={handleInstructionsChange}
         placeholder="Enter instructions"
         className="shrink-0 resize-none rounded-none border-none bg-transparent! shadow-none focus-visible:ring-0"
       />
-      {mounted && isPreviewOpen && data.generated?.url
-        ? createPortal(
-            <div
-              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90"
-              role="dialog"
-              aria-modal="true"
-              onClick={() => setIsPreviewOpen(false)}
-            >
-              <button
-                type="button"
-                aria-label="Close image preview"
-                className="absolute right-4 top-4 z-[102] inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
-                onClick={() => setIsPreviewOpen(false)}
-              >
-                <XIcon size={18} />
-              </button>
-              <div className="relative z-[101] h-full w-full" onClick={(e) => e.stopPropagation()}>
-                <Image
-                  src={data.generated.url}
-                  alt="Image preview"
-                  fill
-                  className="object-contain"
-                  sizes="100vw"
-                  priority
-                />
-              </div>
-            </div>,
-            document.body
-          )
-        : null}
-
-      {isGalleryOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-          onClick={() => setIsGalleryOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          onLoad={() => {
-            // lazy load content
-            void openGallery();
-          }}
-        >
-          <div
-            className="relative m-4 w-[min(1200px,100vw-2rem)] max-h-[90vh] rounded-xl bg-background p-4 shadow"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <h3 className="text-lg font-semibold">My files</h3>
-              <button
-                type="button"
-                aria-label="Close gallery"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-secondary hover:bg-secondary/80"
-                onClick={() => setIsGalleryOpen(false)}
-              >
-                <XIcon size={16} />
-              </button>
-            </div>
-            <div className="grid max-h-[75vh] grid-cols-2 gap-3 overflow-auto md:grid-cols-3 lg:grid-cols-4">
-              {galleryLoading && <div className="col-span-full text-sm text-muted-foreground">Loading...</div>}
-              {gallery && gallery.length === 0 && (
-                <div className="col-span-full text-sm text-muted-foreground">No files yet</div>
-              )}
-              {gallery?.map((file) => (
-                <div key={file.url} className="group relative overflow-hidden rounded-lg border">
-                  <div className="relative aspect-square bg-secondary">
-                    <Image src={file.url} alt={file.name} fill className="object-cover" sizes="25vw" />
-                  </div>
-                  <div className="flex items-center justify-between gap-2 p-2">
-                    <div className="min-w-0 flex-1 truncate text-xs">{file.name}</div>
-                    <div className="flex items-center gap-1">
-                      <a
-                        href={file.url}
-                        download
-                        className="inline-flex items-center rounded-md border px-2 py-1 text-xs hover:bg-secondary"
-                      >
-                        Download
-                      </a>
-                      <button
-                        type="button"
-                        className="inline-flex items-center rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground hover:opacity-90"
-                        onClick={() => {
-                          // вставляем файл в текущий проект (центр экрана)
-                          const center = project?.viewport?.x !== undefined
-                            ? { x: project.viewport.x + (project.viewport.width ?? 0) / 2, y: project.viewport.y + (project.viewport.height ?? 0) / 2 }
-                            : { x: 0, y: 0 };
-                          updateNodeData(id, {
-                            generated: { url: file.url, type: file.type },
-                            updatedAt: new Date().toISOString(),
-                          });
-                          setIsGalleryOpen(false);
-                        }}
-                      >
-                        Select
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {/* Удалили кастомный полноэкранный просмотр — теперь работает ImageZoom */}
     </NodeLayout>
   );
-};
+}

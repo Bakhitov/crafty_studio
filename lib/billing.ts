@@ -6,10 +6,12 @@ export const isManualBilling = () => env.BILLING_MODE === 'manual';
 
 const creditsKey = (userId: string) => `credits:${userId}`;
 const planKey = (userId: string) => `plan:${userId}`;
+const hobbyClaimedKey = (userId: string) => `hobby-claimed:${userId}`;
 
 export async function getManualCredits(userId: string): Promise<number> {
-  const val = await redis.get<number>(creditsKey(userId));
-  return typeof val === 'number' ? val : 0;
+  const raw = await redis.get(creditsKey(userId));
+  const parsed = typeof raw === 'number' ? raw : Number(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 export async function addManualCredits(userId: string, delta: number) {
@@ -21,7 +23,8 @@ export async function setManualCredits(userId: string, value: number) {
 }
 
 export async function decManualCredits(userId: string, value: number) {
-  await redis.decrby(creditsKey(userId), value);
+  // Поддержка десятичных кредитов: используем incrbyfloat с отрицательным значением
+  await redis.incrbyfloat(creditsKey(userId), -value);
 }
 
 export async function getManualPlan(userId: string): Promise<string | null> {
@@ -33,12 +36,20 @@ export async function setManualPlan(userId: string, plan: string) {
   await redis.set(planKey(userId), plan);
 }
 
-// $ → credits и списание в manual-режиме
-export async function trackCredits(costInDollars: number) {
+// Списание кредитов в manual-режиме: на вход уже кредиты (может быть десятичное)
+export async function trackCredits(credits: number) {
   const profile = await currentUserProfile();
-  const creditValue = 0.005;
-  const creditsToCharge = Math.ceil(costInDollars / creditValue);
-  await decManualCredits(profile.id, creditsToCharge);
+  // В manual-режиме списываем сырые значения без округления
+  await decManualCredits(profile.id, credits);
+}
+
+// One-time Hobby flag
+export async function hasClaimedHobby(userId: string): Promise<boolean> {
+  return Boolean(await redis.get<number>(hobbyClaimedKey(userId)));
+}
+
+export async function markHobbyClaimed(userId: string) {
+  await redis.set(hobbyClaimedKey(userId), 1);
 }
 
 

@@ -4,6 +4,7 @@ import { getCredits } from '@/app/actions/credits/get';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/providers/subscription';
 import NumberFlow from '@number-flow/react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CoinsIcon, Loader2Icon } from 'lucide-react';
 import Link from 'next/link';
 import useSWR from 'swr';
@@ -18,11 +19,11 @@ const creditsFetcher = async () => {
   return response;
 };
 
-const pluralize = (count: number) => (count === 1 ? 'credit' : 'credits');
+const pluralize = (count: number) => (count === 1 ? 'кредит' : 'кредитов');
 
 export const CreditCounter = () => {
   const subscription = useSubscription();
-  const { data, error } = useSWR('credits', creditsFetcher, {
+  const { data, error } = useSWR('кредитов', creditsFetcher, {
     revalidateOnMount: true,
   });
 
@@ -34,21 +35,32 @@ export const CreditCounter = () => {
     return <Loader2Icon size={16} className="size-4 animate-spin" />;
   }
 
-  const label = pluralize(Math.abs(data.credits));
+  const valueInt = Math.trunc(Math.abs(data.credits));
+  const label = pluralize(valueInt);
 
+  const precise = Math.abs(data.credits);
   return (
     <div className="flex shrink-0 items-center gap-2 px-2 text-muted-foreground">
       <CoinsIcon size={16} />
-      <NumberFlow
-        className="text-nowrap text-sm"
-        value={Math.abs(data.credits)}
-        suffix={
-          data.credits < 0 ? ` ${label} in overage` : ` ${label} remaining`
-        }
-      />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div>
+            <NumberFlow
+              className="text-nowrap text-sm"
+              value={valueInt}
+              suffix={
+                data.credits < 0 ? ` ${label} в перерасходе` : ` ${label} `
+              }
+            />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent sideOffset={6}>
+          {precise.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} кредитов
+        </TooltipContent>
+      </Tooltip>
       {data.credits <= 0 && subscription.plan === 'hobby' && (
         <Button size="sm" className="-my-2 -mr-3 ml-1 rounded-full" asChild>
-          <Link href="/pricing">Upgrade</Link>
+          <Link href="/pricing">Оплатить</Link>
         </Button>
       )}
     </div>

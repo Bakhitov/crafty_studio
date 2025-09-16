@@ -185,20 +185,7 @@ export const AudioTransform = ({
       ),
     });
   }
-
-  if (data.updatedAt) {
-    toolbar.push({
-      tooltip: `Last updated: ${new Intl.DateTimeFormat('en-US', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-      }).format(new Date(data.updatedAt))}`,
-      children: (
-        <Button size="icon" variant="ghost" className="rounded-full">
-          <ClockIcon size={12} />
-        </Button>
-      ),
-    });
-  }
+  // Убрали индикатор обновления из тулбара — теперь дата в правой части заголовка
 
   const handleInstructionsChange: ChangeEventHandler<HTMLTextAreaElement> = (
     event

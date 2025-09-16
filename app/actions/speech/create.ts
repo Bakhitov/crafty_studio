@@ -11,6 +11,7 @@ import type { Edge, Node, Viewport } from '@xyflow/react';
 import { experimental_generateSpeech as generateSpeech } from 'ai';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { translateToEnglish } from '@/lib/translate';
 
 type GenerateSpeechActionProps = {
   text: string;
@@ -48,18 +49,22 @@ export const generateSpeechAction = async ({
 
     const provider = model.providers[0];
 
+    const textEn = (await translateToEnglish(text)) ?? text;
+    const instructionsEn = (await translateToEnglish(instructions)) ?? instructions;
+
     const { audio } = await generateSpeech({
       model: provider.model,
-      text,
+      text: textEn,
       outputFormat: 'mp3',
-      instructions,
+      instructions: instructionsEn,
       voice,
     });
 
-    await trackCreditUsage({
-      action: 'generate_speech',
-      cost: provider.getCost(text.length),
-    });
+    {
+      const usd = provider.getCost(text.length)
+      const credits = usd * 200
+      await trackCreditUsage({ action: 'generate_speech', cost: credits })
+    }
 
     const blob = await client.storage
       .from('files')

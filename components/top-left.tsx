@@ -4,6 +4,8 @@ import { projects } from '@/schema';
 import { eq } from 'drizzle-orm';
 import { ProjectSelector } from './project-selector';
 import { ProjectSettings } from './project-settings';
+import { ProjectFloatingChat } from './project-floating-chat';
+import { SidebarTrigger } from './ui/sidebar';
 
 type TopLeftProps = {
   id: string;
@@ -32,14 +34,15 @@ export const TopLeft = async ({ id }: TopLeftProps) => {
 
   return (
     <div className="absolute top-16 right-0 left-0 z-[50] m-4 flex items-center gap-2 sm:top-0 sm:right-auto">
+      <div className="flex shrink-0 items-center rounded-full border bg-card/90 p-1 drop-shadow-xs backdrop-blur-sm">
+        <ProjectFloatingChat projectId={currentProject.id} />
+        <ProjectSettings data={currentProject} />
+      </div>
       <div className="flex flex-1 items-center rounded-full border bg-card/90 p-1 drop-shadow-xs backdrop-blur-sm">
         <ProjectSelector
           projects={allProjects}
           currentProject={currentProject.id}
         />
-      </div>
-      <div className="flex shrink-0 items-center rounded-full border bg-card/90 p-1 drop-shadow-xs backdrop-blur-sm">
-        <ProjectSettings data={currentProject} />
       </div>
     </div>
   );

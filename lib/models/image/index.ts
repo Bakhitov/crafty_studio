@@ -39,11 +39,12 @@ export const imageModels: Record<string, CraftyImageModel> = {
       {
         ...providers.ark,
         model: ark.image('seedream-4-0-250828'),
-        // Billing: per generated image; tokens provided in response. Use a flat approx until clarified.
+        // Image-to-Image / Text-to-Image: $0.0300 USD / piece
         getCost: () => 0.03,
       },
     ],
-    // Ark supports choosing size via labels like 1K/2K/4K or explicit WxH; leave flexible
+    // Используем такие же размеры, как у gpt-image-1, + 2048x2048
+    sizes: ['1024x1024', '1024x1536', '1536x1024', '2048x2048'],
     supportsEdit: true,
     default: true,
   },
@@ -54,7 +55,8 @@ export const imageModels: Record<string, CraftyImageModel> = {
       {
         ...providers.ark,
         model: ark.image('seedream-3-0-t2i-250415'),
-        getCost: () => 0.02,
+        // Text-to-Image: $0.0300 USD / piece (как и SeedEdit 3.0 I2I)
+        getCost: () => 0.03,
       },
     ],
     supportsEdit: false,
@@ -67,7 +69,8 @@ export const imageModels: Record<string, CraftyImageModel> = {
       {
         ...providers.ark,
         model: ark.image('seededit-3-0-i2i-250628'),
-        getCost: () => 0.02,
+        // Image-to-Image: $0.0300 USD / piece
+        getCost: () => 0.03,
       },
     ],
     supportsEdit: true,

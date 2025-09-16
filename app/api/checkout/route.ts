@@ -2,7 +2,7 @@ import { currentUser, currentUserProfile } from '@/lib/auth';
 import { env } from '@/lib/env';
 import { parseError } from '@/lib/error/parse';
 import { stripe } from '@/lib/stripe';
-import { isManualBilling } from '@/lib/billing';
+import { hasClaimedHobby, isManualBilling, markHobbyClaimed } from '@/lib/billing';
 import { type NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 
@@ -69,7 +69,34 @@ export const GET = async (request: NextRequest) => {
     return new Response('ID клиента или email не найден', { status: 400 });
   }
 
+  // Блокируем повторное оформление подписки, если уже есть активная
+  if (profile.subscriptionId) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(profile.subscriptionId);
+      const activeStatuses = new Set<Stripe.Subscription.Status>([
+        'active',
+        'trialing',
+        'past_due',
+        'unpaid',
+        'incomplete',
+      ]);
+
+      if (activeStatuses.has(subscription.status)) {
+        return new Response(
+          'У вас уже есть активная подписка. Для изменения используйте портал биллинга.',
+          { status: 400 }
+        );
+      }
+    } catch {
+      // Если не удалось получить подписку — продолжаем, позволим создать новую
+    }
+  }
+
   if (productName === 'hobby') {
+    // Проверка: Hobby только один раз на пользователя
+    if (await hasClaimedHobby(profile.id)) {
+      return new Response('Hobby доступен только один раз для каждого пользователя.', { status: 400 });
+    }
     lineItems.push(
       {
         price: await getFrequencyPrice(env.STRIPE_HOBBY_PRODUCT_ID, 'month'),
@@ -112,6 +139,10 @@ export const GET = async (request: NextRequest) => {
       throw new Error('Ссылка на оплату не найдена');
     }
 
+    // Пометим, что Hobby уже оформлен, чтобы исключить повтор
+    if (productName === 'hobby') {
+      await markHobbyClaimed(profile.id);
+    }
     return NextResponse.redirect(checkoutLink.url);
   } catch (error) {
     const message = parseError(error);

@@ -10,6 +10,7 @@ import { useProject } from '@/providers/project';
 import { useReactFlow } from '@xyflow/react';
 import { Loader2Icon } from 'lucide-react';
 import Image from 'next/image';
+import { ImageZoom } from '@/components/ui/kibo-ui/image-zoom';
 import { useState } from 'react';
 import type { ImageNodeProps } from '.';
 
@@ -77,13 +78,15 @@ export const ImagePrimitive = ({
         </Skeleton>
       )}
       {!isUploading && data.content && (
-        <Image
-          src={data.content.url}
-          alt="Image"
-          width={data.width ?? 1000}
-          height={data.height ?? 1000}
-          className="h-auto w-full"
-        />
+        <ImageZoom>
+          <Image
+            src={data.content.url}
+            alt="Image"
+            width={data.width ?? 1000}
+            height={data.height ?? 1000}
+            className="h-auto w-full"
+          />
+        </ImageZoom>
       )}
       {!isUploading && !data.content && (
         <Dropzone

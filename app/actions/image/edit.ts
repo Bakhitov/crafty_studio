@@ -15,6 +15,7 @@ import {
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import OpenAI, { toFile } from 'openai';
+import { translateToEnglish } from '@/lib/translate';
 
 type EditImageActionProps = {
   images: {
@@ -120,8 +121,9 @@ export const editImageAction = async ({
         ? 'Create a variant of the image.'
         : 'Create a single variant of the images.';
 
-    const prompt =
+    const rawPrompt =
       !instructions || instructions === '' ? defaultPrompt : instructions;
+    const prompt = (await translateToEnglish(rawPrompt)) ?? rawPrompt;
 
     if (provider.model.modelId === 'gpt-image-1') {
       const generatedImageResponse = await generateGptImage1Image({
@@ -130,13 +132,14 @@ export const editImageAction = async ({
         size,
       });
 
-      await trackCreditUsage({
-        action: 'generate_image',
-        cost: provider.getCost({
+      {
+        const usd = provider.getCost({
           ...generatedImageResponse.usage,
           size,
-        }),
-      });
+        });
+        const credits = usd * 200;
+        await trackCreditUsage({ action: 'generate_image', cost: credits });
+      }
 
       image = generatedImageResponse.image;
     } else {
@@ -156,9 +159,15 @@ export const editImageAction = async ({
           })
         );
 
+        const arkModelId = (provider.model as { modelId?: string }).modelId ?? '';
+        const isSeedream4 = arkModelId.startsWith('seedream-4-0');
+
         providerOptions = {
           ark: {
-            image: dataUrls.length === 1 ? dataUrls[0] : dataUrls,
+            // Seedream 4.0: поддерживает массив; Seedream/Seededit 3.x: только одно изображение
+            image: isSeedream4
+              ? (dataUrls.length === 1 ? dataUrls[0] : dataUrls)
+              : dataUrls[0],
           },
         } as const;
       } else if (providerName === 'black-forest-labs') {
@@ -170,19 +179,22 @@ export const editImageAction = async ({
         providerOptions = { bfl: { image: base64First } } as const;
       }
 
+      const arkModelId = (provider.model as { modelId?: string }).modelId ?? '';
+      const isArk3 = (provider.model as { provider?: string }).provider === 'ark' &&
+        (arkModelId.startsWith('seedream-3') || arkModelId.startsWith('seededit-3'));
+
       const generatedImageResponse = await generateImage({
         model: provider.model,
         prompt,
-        size: size as never,
+        size: (isArk3 ? undefined : (size as never)) as never,
         providerOptions: providerOptions as never,
       });
 
-      await trackCreditUsage({
-        action: 'generate_image',
-        cost: provider.getCost({
-          size,
-        }),
-      });
+      {
+        const usd = provider.getCost({ size });
+        const credits = usd * 200;
+        await trackCreditUsage({ action: 'generate_image', cost: credits });
+      }
 
       image = generatedImageResponse.image;
     }
@@ -224,13 +236,28 @@ export const editImageAction = async ({
       throw new Error('Node not found');
     }
 
+    const prevVersions = Array.isArray((existingNode.data as any)?.versions)
+      ? ((existingNode.data as any).versions as { url: string; type: string; createdAt?: string; meta?: Record<string, unknown> }[])
+      : ((existingNode.data as any)?.generated
+          ? [((existingNode.data as any).generated as { url: string; type: string })]
+          : []);
+
+    const newVersion = {
+      url: downloadUrl.publicUrl,
+      type: contentType,
+      createdAt: new Date().toISOString(),
+      meta: { modelId, size },
+    };
+
+    const versions = [...prevVersions, newVersion];
+    const versionIndex = versions.length - 1;
+
     const newData = {
       ...(existingNode.data ?? {}),
       updatedAt: new Date().toISOString(),
-      generated: {
-        url: downloadUrl.publicUrl,
-        type: contentType,
-      },
+      generated: newVersion,
+      versions,
+      versionIndex,
       description: instructions ?? defaultPrompt,
     };
 

@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { mutate } from 'swr';
 import type { VideoNodeProps } from '.';
 import { ModelSelector } from '../model-selector';
+import { finalizeVideoTask } from '@/app/actions/video/finalize';
 
 type VideoTransformProps = VideoNodeProps & {
   title: string;
@@ -75,19 +76,87 @@ export const VideoTransform = ({
         imageCount: images.length,
       });
 
-      const response = await generateVideoAction({
-        modelId,
-        prompt: [data.instructions ?? '', ...textPrompts].join('\n'),
-        images: images.slice(0, 1),
-        nodeId: id,
-        projectId: project.id,
-      });
+      const prompt = [data.instructions ?? '', ...textPrompts].join('\n');
 
-      if ('error' in response) {
-        throw new Error(response.error);
+      if (modelId.startsWith('seedance-')) {
+        // Async flow for Seedance
+        // Build images array with optional roles in the future; for now pass first image as first_frame
+        const seedanceImages = images.length
+          ? [{ url: images[0].url, role: 'first_frame' as const }]
+          : undefined;
+        const createRes = await fetch('/api/v1/video/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ modelId, prompt, images: seedanceImages }),
+        });
+
+        const { taskId, error } = (await createRes.json()) as {
+          taskId?: string;
+          error?: string;
+        };
+
+        if (!createRes.ok || !taskId) {
+          throw new Error(error ?? 'Failed to create video task');
+        }
+
+        // Poll client-side until done
+        let arkUrl: string | undefined;
+        let completionTokens: number | undefined;
+        const start = Date.now();
+        const timeoutMs = 10 * 60 * 1000; // 10 minutes
+        while (Date.now() - start < timeoutMs) {
+          await new Promise((r) => setTimeout(r, 4000));
+          const statusRes = await fetch(`/api/v1/video/tasks/${taskId}`);
+          const { status, videoUrl, completionTokens: ct, error: statusError } = (await statusRes.json()) as {
+            status?: string;
+            videoUrl?: string;
+            completionTokens?: number;
+            error?: string;
+          };
+          if (statusError) throw new Error(statusError);
+          if (status === 'succeeded' && videoUrl) {
+            arkUrl = videoUrl;
+            completionTokens = ct;
+            break;
+          }
+          if (status === 'failed' || status === 'canceled') {
+            throw new Error(`Task ${status}`);
+          }
+        }
+
+        if (!arkUrl) {
+          throw new Error('Video task timed out');
+        }
+
+        const finalize = await finalizeVideoTask({
+          arkUrl,
+          nodeId: id,
+          projectId: project.id,
+          modelId,
+          completionTokens,
+        });
+
+        if ('error' in finalize) {
+          throw new Error(finalize.error);
+        }
+
+        updateNodeData(id, finalize.nodeData);
+      } else {
+        // Sync flow for other providers
+        const response = await generateVideoAction({
+          modelId,
+          prompt,
+          images: images.slice(0, 1),
+          nodeId: id,
+          projectId: project.id,
+        });
+
+        if ('error' in response) {
+          throw new Error(response.error);
+        }
+
+        updateNodeData(id, response.nodeData);
       }
-
-      updateNodeData(id, response.nodeData);
 
       toast.success('Video generated successfully');
 
@@ -155,19 +224,7 @@ export const VideoTransform = ({
     });
   }
 
-  if (data.updatedAt) {
-    toolbar.push({
-      tooltip: `Last updated: ${new Intl.DateTimeFormat('en-US', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-      }).format(new Date(data.updatedAt))}`,
-      children: (
-        <Button size="icon" variant="ghost" className="rounded-full">
-          <ClockIcon size={12} />
-        </Button>
-      ),
-    });
-  }
+  // Убрали индикатор обновления из тулбара — теперь дата в правой части заголовка
 
   const handleInstructionsChange: ChangeEventHandler<HTMLTextAreaElement> = (
     event

@@ -5,6 +5,7 @@ import {
   providers,
 } from '@/lib/providers';
 import { luma } from './luma';
+import { ark as arkVideo } from './ark';
 import { minimax } from './minimax';
 import { replicate } from './replicate';
 import { runway } from './runway';
@@ -29,6 +30,40 @@ export type CraftyVideoModel = CraftyModel & {
 };
 
 export const videoModels: Record<string, CraftyVideoModel> = {
+  'seedance-1-0-lite-t2v-250428': {
+    label: 'Seedance 1.0 Lite (T2V)',
+    chef: providers.ark,
+    providers: [
+      {
+        ...providers.ark,
+        model: arkVideo('seedance-1-0-lite-t2v-250428'),
+        // Billing per 1K completion tokens: $0.0009 (точно считать при финализации)
+        getCost: ({ duration }) => 0,
+      },
+    ],
+  },
+  'seedance-1-0-lite-i2v-250428': {
+    label: 'Seedance 1.0 Lite (I2V)',
+    chef: providers.ark,
+    providers: [
+      {
+        ...providers.ark,
+        model: arkVideo('seedance-1-0-lite-i2v-250428'),
+        getCost: ({ duration }) => 0,
+      },
+    ],
+  },
+  'seedance-1-0-pro-250528': {
+    label: 'Seedance 1.0 Pro (I2V)',
+    chef: providers.ark,
+    providers: [
+      {
+        ...providers.ark,
+        model: arkVideo('seedance-1-0-pro-250528'),
+        getCost: ({ duration }) => 0,
+      },
+    ],
+  },
   'minimax-t2v-01-director': {
     label: 'T2V-01-Director',
     chef: providers.minimax,

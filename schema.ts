@@ -31,3 +31,12 @@ export const profile = pgTable('profile', {
   productId: text('product_id'),
   onboardedAt: timestamp('onboarded_at'),
 });
+
+export const projectMessages = pgTable('project_message', {
+  id: text('id').primaryKey().default(uuid).notNull(),
+  projectId: text('project_id').notNull(),
+  userId: text('user_id'),
+  role: varchar('role').notNull(), // 'user' | 'assistant' | 'system'
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});

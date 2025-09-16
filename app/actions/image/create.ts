@@ -16,6 +16,7 @@ import {
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import OpenAI from 'openai';
+import { translateToEnglish } from '@/lib/translate';
 
 type GenerateImageActionProps = {
   prompt: string;
@@ -109,20 +110,25 @@ export const generateImageAction = async ({
 
     const provider = model.providers[0];
 
+    // Build single combined text and translate once
+    const combinedRaw = [instructions?.trim(), prompt].filter(Boolean).join('\n');
+    const combinedEn = (await translateToEnglish(combinedRaw)) ?? combinedRaw;
+
     if (provider.model.modelId === 'gpt-image-1') {
       const generatedImageResponse = await generateGptImage1Image({
-        instructions,
-        prompt,
+        instructions: undefined,
+        prompt: combinedEn,
         size,
       });
 
-      await trackCreditUsage({
-        action: 'generate_image',
-        cost: provider.getCost({
+      {
+        const usd = provider.getCost({
           ...generatedImageResponse.usage,
           size,
-        }),
-      });
+        })
+        const credits = usd * 200
+        await trackCreditUsage({ action: 'generate_image', cost: credits })
+      }
 
       image = generatedImageResponse.image;
     } else {
@@ -133,33 +139,32 @@ export const generateImageAction = async ({
         aspectRatio = `${width / divisor}:${height / divisor}`;
       }
 
-      const providerOptions =
-        (provider.model as { provider?: string }).provider === 'ark'
-          ? undefined // Ark t2i doesn't need providerOptions
-          : undefined;
+      const providerName = (provider.model as { provider?: string }).provider;
+      const arkModelId = (provider.model as { modelId?: string }).modelId ?? '';
+      const isArk3 =
+        providerName === 'ark' &&
+        (arkModelId.startsWith('seedream-3') || arkModelId.startsWith('seededit-3'));
+
+      const providerOptions = providerName === 'ark' ? undefined : undefined;
 
       const generatedImageResponse = await generateImage({
         model: provider.model,
         prompt: [
-          'Generate an image based on the following instructions and context.',
-          '---',
-          'Instructions:',
-          instructions ?? 'None.',
+          'Generate an image based on the following context.',
           '---',
           'Context:',
-          prompt,
+          combinedEn,
         ].join('\n'),
-        size: size as never,
-        aspectRatio,
+        size: (isArk3 ? undefined : (size as never)) as never,
+        aspectRatio: isArk3 ? undefined : aspectRatio,
         providerOptions: providerOptions as never,
       });
 
-      await trackCreditUsage({
-        action: 'generate_image',
-        cost: provider.getCost({
-          size,
-        }),
-      });
+      {
+        const usd = provider.getCost({ size })
+        const credits = usd * 200
+        await trackCreditUsage({ action: 'generate_image', cost: credits })
+      }
 
       image = generatedImageResponse.image;
     }
@@ -246,13 +251,28 @@ export const generateImageAction = async ({
       throw new Error('Node not found');
     }
 
+    const prevVersions = Array.isArray((existingNode.data as any)?.versions)
+      ? ((existingNode.data as any).versions as { url: string; type: string; createdAt?: string; meta?: Record<string, unknown> }[])
+      : ((existingNode.data as any)?.generated
+          ? [((existingNode.data as any).generated as { url: string; type: string })]
+          : []);
+
+    const newVersion = {
+      url: downloadUrl.publicUrl,
+      type: image.mediaType,
+      createdAt: new Date().toISOString(),
+      meta: { modelId, size },
+    };
+
+    const versions = [...prevVersions, newVersion];
+    const versionIndex = versions.length - 1;
+
     const newData = {
       ...(existingNode.data ?? {}),
       updatedAt: new Date().toISOString(),
-      generated: {
-        url: downloadUrl.publicUrl,
-        type: image.mediaType,
-      },
+      generated: newVersion,
+      versions,
+      versionIndex,
       description,
     };
 

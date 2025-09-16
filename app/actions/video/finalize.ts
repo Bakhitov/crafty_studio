@@ -3,79 +3,54 @@
 import { getSubscribedUser } from '@/lib/auth';
 import { database } from '@/lib/database';
 import { parseError } from '@/lib/error/parse';
-import { videoModels } from '@/lib/models/video';
 import { trackCreditUsage } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 import { projects } from '@/schema';
 import type { Edge, Node, Viewport } from '@xyflow/react';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { translateToEnglish } from '@/lib/translate';
 
-type GenerateVideoActionProps = {
-  modelId: string;
-  prompt: string;
-  images: {
-    url: string;
-    type: string;
-  }[];
+type FinalizeVideoTaskProps = {
+  arkUrl: string;
   nodeId: string;
   projectId: string;
+  modelId: string;
+  completionTokens?: number;
 };
 
-export const generateVideoAction = async ({
-  modelId,
-  prompt,
-  images,
+export const finalizeVideoTask = async ({
+  arkUrl,
   nodeId,
   projectId,
-}: GenerateVideoActionProps): Promise<
-  | {
-      nodeData: object;
-    }
-  | {
-      error: string;
-    }
+  modelId,
+  completionTokens,
+}: FinalizeVideoTaskProps): Promise<
+  | { nodeData: object }
+  | { error: string }
 > => {
   try {
     const client = await createClient();
-    const user = await getSubscribedUser();
-    const model = videoModels[modelId];
+    await getSubscribedUser();
 
-    if (!model) {
-      throw new Error('Model not found');
+    const response = await fetch(arkUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download video: ${response.status}`);
     }
-
-    const provider = model.providers[0];
-
-    let firstFrameImage = images.at(0)?.url;
-
-    if (firstFrameImage && process.env.NODE_ENV !== 'production') {
-      const response = await fetch(firstFrameImage);
-      const blob = await response.blob();
-      const uint8Array = new Uint8Array(await blob.arrayBuffer());
-      const base64 = Buffer.from(uint8Array).toString('base64');
-
-      firstFrameImage = `data:${images.at(0)?.type};base64,${base64}`;
-    }
-
-    const promptEn = (await translateToEnglish(prompt)) ?? prompt;
-    const url = await provider.model.generate({
-      prompt: promptEn,
-      imagePrompt: firstFrameImage,
-      duration: 5,
-      aspectRatio: '16:9',
-    });
-
-    const response = await fetch(url);
     const arrayBuffer = await response.arrayBuffer();
 
-    {
-      const usd = provider.getCost({ duration: 5 })
-      const credits = usd * 200
-      await trackCreditUsage({ action: 'generate_video', cost: credits })
+    // Compute Seedance cost (per 1K completion tokens); fallback 0 if unknown
+    let costUsd = 0;
+    if (modelId.startsWith('seedance-') && typeof completionTokens === 'number') {
+      const ratePerK = modelId.includes('lite') ? 0.0009 : 0.00125;
+      costUsd = ratePerK * (completionTokens / 1000);
     }
 
+    {
+      const credits = costUsd * 200;
+      await trackCreditUsage({ action: 'generate_video', cost: credits });
+    }
+
+    const user = await getSubscribedUser();
     const blob = await client.storage
       .from('files')
       .upload(`${user.id}/${nanoid()}.mp4`, arrayBuffer, {
@@ -105,7 +80,6 @@ export const generateVideoAction = async ({
     };
 
     const existingNode = content.nodes.find((n) => n.id === nodeId);
-
     if (!existingNode) {
       throw new Error('Node not found');
     }
@@ -119,28 +93,20 @@ export const generateVideoAction = async ({
       },
     };
 
-    const updatedNodes = content.nodes.map((existingNode) => {
-      if (existingNode.id === nodeId) {
-        return {
-          ...existingNode,
-          data: newData,
-        };
-      }
-
-      return existingNode;
-    });
+    const updatedNodes = content.nodes.map((n) =>
+      n.id === nodeId ? { ...n, data: newData } : n
+    );
 
     await database
       .update(projects)
       .set({ content: { ...content, nodes: updatedNodes } })
       .where(eq(projects.id, projectId));
 
-    return {
-      nodeData: newData,
-    };
+    return { nodeData: newData };
   } catch (error) {
     const message = parseError(error);
-
     return { error: message };
   }
 };
+
+

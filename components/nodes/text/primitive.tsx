@@ -44,7 +44,16 @@ export const TextPrimitive = ({
       type={type}
       className="overflow-hidden p-0"
     >
-      <div className="nowheel h-full max-h-[30rem] overflow-auto">
+      <div
+        className="nodrag nowheel select-text h-full max-h-[30rem] overflow-auto"
+        onPointerDown={(e) => {
+          // Allow caret placement and text selection inside the editor
+          e.stopPropagation();
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+        }}
+      >
         <EditorProvider
           onCreate={handleCreate}
           immediatelyRender={false}

@@ -20,6 +20,7 @@ import { CodeIcon, CopyIcon, EyeIcon, TrashIcon } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { NodeToolbar } from './toolbar';
 
+
 type NodeLayoutProps = {
   children: ReactNode;
   id: string;
@@ -35,6 +36,8 @@ type NodeLayoutProps = {
     children: ReactNode;
   }[];
   className?: string;
+  topCenter?: ReactNode;
+  headerIcon?: ReactNode;
 };
 
 export const NodeLayout = ({
@@ -45,11 +48,13 @@ export const NodeLayout = ({
   toolbar,
   title,
   className,
+  topCenter,
+  headerIcon,
 }: NodeLayoutProps) => {
   const { deleteElements, setCenter, getNode, updateNode } = useReactFlow();
   const { duplicateNode } = useNodeOperations();
   const [showData, setShowData] = useState(false);
-  const NodeIcon = nodeButtons.find((b) => b.id === type)?.icon;
+  const DefaultNodeIcon = nodeButtons.find((b) => b.id === type)?.icon;
 
   const handleFocus = () => {
     const node = getNode(id);
@@ -106,11 +111,36 @@ export const NodeLayout = ({
         <ContextMenuTrigger>
           <div className="relative size-full h-auto w-sm">
             {type !== 'drop' && (
-              <div className="-translate-y-full -top-2 absolute right-0 left-0 flex shrink-0 items-center justify-between">
-                <p className="font-mono text-muted-foreground text-xs tracking-tighter flex items-center gap-1">
-                  {NodeIcon ? <NodeIcon size={10} /> : null}
+              <div className="-translate-y-full -top-1 absolute right-0 left-0 grid grid-cols-3 items-center px-2">
+                <p className="font-mono text-muted-foreground text-xs tracking-tighter flex items-center gap-1 justify-self-start">
+                  {headerIcon
+                    ? headerIcon
+                    : DefaultNodeIcon
+                    ? <DefaultNodeIcon size={10} />
+                    : null}
                   {title}
                 </p>
+                {topCenter ? (
+                  <div className="justify-self-center">
+                    {topCenter}
+                  </div>
+                ) : null}
+                <div className="justify-self-end">
+                  {(() => {
+                    const ts = (data as any)?.updatedAt as string | undefined
+                    if (!ts) return null
+                    try {
+                      const d = new Date(ts)
+                      const date = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })
+                      const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+                      return (
+                        <span className="font-mono text-[10px] text-muted-foreground">{`${date} - ${time}`}</span>
+                      )
+                    } catch {
+                      return null
+                    }
+                  })()}
+                </div>
               </div>
             )}
             <div

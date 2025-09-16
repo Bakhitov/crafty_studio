@@ -86,10 +86,12 @@ export const POST = async (req: Request) => {
       const inputTokens = usage.inputTokens ?? 0;
       const outputTokens = usage.outputTokens ?? 0;
 
-      await trackCreditUsage({
-        action: 'code',
-        cost: inputCost * inputTokens + outputCost * outputTokens,
-      });
+      {
+        // Цены указываются за 1M токенов → нормализуем на 1e6
+        const usd = (inputTokens / 1_000_000) * inputCost + (outputTokens / 1_000_000) * outputCost;
+        const credits = usd * 200;
+        await trackCreditUsage({ action: 'code', cost: credits });
+      }
     },
   });
 
