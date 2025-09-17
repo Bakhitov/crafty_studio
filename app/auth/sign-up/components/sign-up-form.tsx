@@ -49,11 +49,11 @@ export const SignUpForm = () => {
       <form onSubmit={handleEmailSignUp}>
         <div className="flex flex-col gap-6">
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Почта</Label>
             <Input
               id="email"
               type="email"
-              placeholder="jane@example.com"
+              placeholder="akhan@example.com"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -61,7 +61,7 @@ export const SignUpForm = () => {
           </div>
           <div className="grid gap-2">
             <div className="flex items-center">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Пароль</Label>
             </div>
             <Input
               id="password"
@@ -73,7 +73,7 @@ export const SignUpForm = () => {
             />
           </div>
           <Button type="submit" className="w-full" disabled={disabled}>
-            {isLoading ? 'Creating an account...' : 'Sign up'}
+            {isLoading ? 'Создание аккаунта...' : 'Зарегистрироваться'}
           </Button>
         </div>
       </form>

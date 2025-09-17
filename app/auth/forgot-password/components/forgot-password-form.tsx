@@ -48,13 +48,12 @@ export const ForgotPasswordForm = () => {
     return (
       <Card className="gap-0 overflow-hidden bg-secondary p-0">
         <CardHeader className="bg-background py-8">
-          <CardTitle>Check Your Email</CardTitle>
-          <CardDescription>Password reset instructions sent</CardDescription>
+          <CardTitle>Проверьте вашу почту</CardTitle>
+          <CardDescription>Инструкции по сбросу пароля отправлены</CardDescription>
         </CardHeader>
         <CardContent className="bg-background pb-8">
           <p className="text-muted-foreground text-sm">
-            If you registered using your email and password, you will receive a
-            password reset email.
+            Если вы зарегистрировались используя вашу электронную почту и пароль, вы получите электронное письмо для сброса пароля.
           </p>
         </CardContent>
       </Card>
@@ -64,39 +63,39 @@ export const ForgotPasswordForm = () => {
   return (
     <Card className="gap-0 overflow-hidden bg-secondary p-0">
       <CardHeader className="bg-background py-8">
-        <CardTitle>Reset Your Password</CardTitle>
+        <CardTitle>Сбросьте ваш пароль</CardTitle>
         <CardDescription>
-          Enter your email and we&apos;ll send you a reset link.
+          Введите вашу электронную почту и мы отправим вам ссылку для сброса пароля.
         </CardDescription>
       </CardHeader>
       <CardContent className="rounded-b-xl border-b bg-background pb-8">
         <form onSubmit={handleForgotPassword}>
           <div className="flex flex-col gap-6">
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Почта</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="jane@example.com"
+                placeholder="akhan@example.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Sending...' : 'Send reset email'}
+              {isLoading ? 'Отправка...' : 'Отправить ссылку для сброса пароля'}
             </Button>
           </div>
         </form>
       </CardContent>
       <CardFooter className="grid divide-y p-0">
         <div className="p-4 text-center text-xs">
-          Remember your password?{' '}
+          Запомнить ваш пароль?{' '}
           <Link
             href="/auth/login"
             className="text-primary underline underline-offset-4"
           >
-            Login
+            Войти
           </Link>
         </div>
       </CardFooter>

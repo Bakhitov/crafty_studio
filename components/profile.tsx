@@ -96,10 +96,10 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
         throw new Error(response.error.message);
       }
 
-      toast.success('Profile updated successfully');
+      toast.success('Профиль успешно обновлен');
       setOpen(false);
     } catch (error) {
-      handleError('Error updating profile', error);
+      handleError('Ошибка при обновлении профиля', error);
     } finally {
       setIsUpdating(false);
     }
@@ -112,7 +112,7 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
 
     try {
       if (!files.length) {
-        throw new Error('No file selected');
+        throw new Error('Файл не выбран');
       }
 
       setIsUpdating(true);
@@ -130,10 +130,10 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
         throw new Error(response.error.message);
       }
 
-      toast.success('Avatar updated successfully');
+      toast.success('Аватар успешно обновлен');
       setImage(url);
     } catch (error) {
-      handleError('Error updating avatar', error);
+      handleError('Ошибка при обновлении аватара', error);
     } finally {
       setIsUpdating(false);
     }
@@ -143,13 +143,13 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
     <Dialog open={open} onOpenChange={setOpen} modal={false}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Profile</DialogTitle>
+          <DialogTitle>Профиль</DialogTitle>
           <DialogDescription>
-            Update your profile information.
+            Обновите вашу информацию о профиле.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">
-          <Label htmlFor="avatar">Avatar</Label>
+          <Label htmlFor="avatar">Аватар</Label>
           <Dropzone
             maxSize={1024 * 1024 * 10}
             minSize={1024}
@@ -166,7 +166,7 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
               {image && (
                 <Image
                   src={image}
-                  alt="Image preview"
+                  alt="Превью изображения"
                   className="absolute top-0 left-0 h-full w-full object-cover"
                   unoptimized
                   width={100}
@@ -187,20 +187,20 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
           aria-disabled={isUpdating}
         >
           <div className="grid gap-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">Имя</Label>
             <Input
               id="name"
-              placeholder="Jane Doe"
+              placeholder="Akhan Bakhitov"
               value={name}
               onChange={({ target }) => setName(target.value)}
               className="text-foreground"
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Почта</Label>
             <Input
               id="email"
-              placeholder="jane@doe.com"
+              placeholder="akhan@example.com"
               value={email}
               type="email"
               onChange={({ target }) => setEmail(target.value)}
@@ -208,7 +208,7 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Пароль</Label>
             <Input
               id="password"
               placeholder="••••••••"
@@ -222,7 +222,7 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
             type="submit"
             disabled={isUpdating || !name.trim() || !email.trim()}
           >
-            Update
+            Обновить
           </Button>
         </form>
       </DialogContent>

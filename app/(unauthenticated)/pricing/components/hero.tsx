@@ -55,6 +55,13 @@ export const Hero = ({ currentPlan, authenticated, manualBilling }: HeroProps) =
   const [yearly, setYearly] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
 
+  const tokenPacks = [
+    { credits: 500, price: 13 },
+    { credits: 1000, price: 25 },
+    { credits: 1500, price: 38 },
+    { credits: 2000, price: 49 },
+  ];
+
   const plans = useMemo(() => {
     const free: Plan = {
       icon: LeafIcon,
@@ -89,8 +96,8 @@ export const Hero = ({ currentPlan, authenticated, manualBilling }: HeroProps) =
       icon: FlowerIcon,
       name: 'Про',
       description: 'Для профессионального использования или небольших команд.',
-      monthlyPrice: 100,
-      yearlyPrice: 80,
+      monthlyPrice: 49,
+      yearlyPrice: 39,
       features: [
         {
           label: '2000 кредитов / месяц',
@@ -330,7 +337,7 @@ export const Hero = ({ currentPlan, authenticated, manualBilling }: HeroProps) =
                     ))}
                   </ul>
                 </CardContent>
-                <CardFooter className="mt-auto p-0">
+                <CardFooter className="mt-auto p-0 flex justify-center">
                   {plan.name === 'Хобби' && manualBilling ? (
                     <Button
                       className="w-full"
@@ -349,7 +356,7 @@ export const Hero = ({ currentPlan, authenticated, manualBilling }: HeroProps) =
                       Получить кредиты
                     </Button>
                   ) : plan.name !== 'Хобби' ? (
-                    <Button className="w-full" variant={plan.variant} onClick={() => setContactOpen(true)}>
+                    <Button variant={plan.variant} onClick={() => setContactOpen(true)}>
                       {plan.ctaText}
                     </Button>
                   ) : (
@@ -361,6 +368,59 @@ export const Hero = ({ currentPlan, authenticated, manualBilling }: HeroProps) =
               </Card>
             </div>
           ))}
+        </div>
+      </div>
+      {/* Right placeholder to complete the row */}
+      <div className="border-b border-dotted" />
+      {/* Token packs section */}
+      <div className="border-b border-dotted" />
+      <div className="relative flex items-center justify-center border-x border-b border-dotted">
+        {/* Corner decorations */}
+        <div className="-bottom-[3px] -left-[3px] absolute">
+          <div className="relative z-1 h-[5px] w-[5px] transform rounded-full bg-border ring-2 ring-background" />
+        </div>
+        <div className="-bottom-[3px] -right-[3px] absolute">
+          <div className="relative z-1 h-[5px] w-[5px] transform rounded-full bg-border ring-2 ring-background" />
+        </div>
+
+        <div className="w-full px-8 py-12">
+          <h2 className="mb-2 text-center font-medium text-2xl tracking-tight md:text-3xl">
+            Отдельные пакеты кредитов
+          </h2>
+          <p className="mx-auto max-w-2xl text-center text-muted-foreground">
+            Купите кредиты разово без подписки. Подойдёт, если иногда не хватает включённого лимита.
+          </p>
+
+          <div className="mt-8 grid grid-cols-1 divide-x divide-dotted md:grid-cols-2 xl:grid-cols-4">
+            {tokenPacks.map((pack) => (
+              <div key={pack.credits} className="p-12">
+                <Card className="h-full rounded-none border-none bg-transparent p-0 shadow-none">
+                  <CardHeader className="p-0">
+                    <div className="inline-flex items-center gap-3">
+                      <div className="inline-flex w-fit items-center justify-center rounded bg-primary/10 p-3">
+                        <CoinsIcon size={16} className="text-primary" />
+                      </div>
+                      <span className="text-3xl font-semibold tracking-tight">
+                        <NumberFlow
+                          value={pack.price}
+                          format={{ currency: 'USD', style: 'currency', maximumFractionDigits: 0 }}
+                        />
+                      </span>
+                    </div>
+                    <CardTitle className="mt-4 font-medium text-xl">
+                      {pack.credits} кредитов
+                    </CardTitle>
+                    <CardDescription>Разовый платёж</CardDescription>
+                  </CardHeader>
+                  <CardFooter className="p-0 flex ">
+                    <Button size="sm" variant="outline" onClick={() => setContactOpen(true)}>
+                      Связаться
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
       <div className="border-b border-dotted" />

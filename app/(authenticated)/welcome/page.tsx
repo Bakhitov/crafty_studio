@@ -8,9 +8,9 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { WelcomeDemo } from './components/welcome-demo';
 
-const title = 'Welcome to Crafty!';
+const title = 'Добро пожаловать в Crafty studio!';
 const description =
-  "Crafty is a platform for creating and sharing AI-powered projects. Let's get started by creating a flow, together.";
+  'Crafty — платформа для создания контента на базе ИИ. Давайте начнём и вместе создадим первый воркфлоу.';
 
 export const metadata: Metadata = {
   title,
@@ -29,10 +29,10 @@ const Welcome = async () => {
   });
 
   if (!welcomeProject) {
-    const response = await createProjectAction('Welcome', true);
+    const response = await createProjectAction('Добро пожаловать', true);
 
     if ('error' in response) {
-      return <div>Error: {response.error}</div>;
+      return <div>Ошибка: {response.error}</div>;
     }
 
     const project = await database.query.projects.findFirst({
@@ -43,7 +43,7 @@ const Welcome = async () => {
   }
 
   if (!welcomeProject) {
-    throw new Error('Failed to create welcome project');
+    throw new Error('Не удалось создать приветственный проект');
   }
 
   return (

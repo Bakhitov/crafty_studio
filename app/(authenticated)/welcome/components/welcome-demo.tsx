@@ -77,12 +77,12 @@ export const WelcomeDemo = ({ title, description }: WelcomeDemoProps) => {
 
   const steps = [
     {
-      instructions: `${description} Sound good?`,
+      instructions: `${description} Звучит хорошо?`,
       action: (
         <div className="not-prose flex items-center gap-4">
-          <Button onClick={() => setStarted(true)}>Sounds good!</Button>
+          <Button onClick={() => setStarted(true)}>Отлично!</Button>
           <Button variant="outline" onClick={handleFinishWelcome}>
-            Skip intro
+            Пропустить вводное
           </Button>
         </div>
       ),
@@ -91,15 +91,15 @@ export const WelcomeDemo = ({ title, description }: WelcomeDemoProps) => {
     {
       instructions: (
         <>
-          Before we start, we need to subscribe to the Hobby plan to claim your
-          free AI credits. Click the button below to claim your credits. It
-          takes a few seconds and doesn't require a credit card.
+          Прежде чем начать, необходимо оформить план Hobby, чтобы получить
+          бесплатные AI-кредиты. Нажмите кнопку ниже, чтобы забрать кредиты.
+          Это займёт несколько секунд и не требует банковской карты.
         </>
       ),
       action: (
         <div className="not-prose">
           <Button asChild>
-            <Link href="/pricing">Claim credits</Link>
+            <Link href="/pricing">Забрать кредиты</Link>
           </Button>
         </div>
       ),
@@ -108,9 +108,9 @@ export const WelcomeDemo = ({ title, description }: WelcomeDemoProps) => {
     {
       instructions: (
         <>
-          First, click the{' '}
+          Сначала нажмите значок{' '}
           <TextNode.icon className="-translate-y-0.5 inline-block size-4 text-primary" />{' '}
-          icon on the bottom toolbar. This will add a Text node to the canvas.
+          на нижней панели инструментов. Это добавит узел Text на холст.
         </>
       ),
       complete: hasTextNode,
@@ -118,9 +118,9 @@ export const WelcomeDemo = ({ title, description }: WelcomeDemoProps) => {
     {
       instructions: (
         <>
-          Fantastic! That's the first node. Because there's no incoming nodes,
-          you control the content. Try writing a few words or sentences in the
-          node. Our favourite is "a wild field of delphiniums".
+          Отлично! Это первый узел. Поскольку у него нет входящих связей,
+          содержание контролируете вы. Попробуйте написать несколько слов или
+          предложений в узле. Наш любимый вариант — «a wild field of delphiniums».
         </>
       ),
       complete: hasTextNode && hasFilledTextNode,
@@ -128,9 +128,9 @@ export const WelcomeDemo = ({ title, description }: WelcomeDemoProps) => {
     {
       instructions: (
         <>
-          Excellent work! Now, let's attach it to an Image node. Drag the handle
-          on the right of the Text node into blank space and drop it. You'll be
-          prompted to select a node type. Select the Image node.
+          Отличная работа! Теперь подключим его к узлу Image. Перетащите ручку
+          справа от узла Text в пустое пространство и отпустите. Вас попросят
+          выбрать тип узла. Выберите узел Image.
         </>
       ),
       complete:
@@ -142,14 +142,14 @@ export const WelcomeDemo = ({ title, description }: WelcomeDemoProps) => {
     {
       instructions: (
         <>
-          You're getting the hang of it! Because this node has incoming nodes
-          connected to it, it will generate content with AI based on the
-          incoming nodes.
+          Вы уже поняли принцип! Поскольку к этому узлу подключены входящие
+          связи, он будет генерировать контент с помощью ИИ на основе входных
+          узлов.
           <br />
           <br />
-          You can also add instructions to the Image node. This will be used to
-          influence the outcome. Try adding some instructions to the Image node,
-          maybe something like "make it anime style".
+          Вы также можете добавить инструкции к узлу Image. Они будут влиять на
+          результат. Попробуйте добавить инструкции к узлу Image, например:
+          «сделай в стиле аниме».
         </>
       ),
       complete:
@@ -162,10 +162,10 @@ export const WelcomeDemo = ({ title, description }: WelcomeDemoProps) => {
     {
       instructions: (
         <>
-          That's all the information we need to generate an awesome image! Click
-          the Image node to select it, then press the{' '}
+          Этой информации достаточно, чтобы сгенерировать классное изображение!
+          Нажмите на узел Image, чтобы выбрать его, затем нажмите кнопку{' '}
           <PlayIcon className="-translate-y-0.5 inline-block size-4 text-primary" />{' '}
-          button to generate content.
+          чтобы запустить генерацию.
         </>
       ),
       complete:
@@ -179,15 +179,15 @@ export const WelcomeDemo = ({ title, description }: WelcomeDemoProps) => {
     {
       instructions: (
         <>
-          That's it! You've created your first AI-powered workflow. You can
-          continue to add more nodes to a canvas to create more complex flows
-          and discover the power of Crafty.
+          Готово! Вы создали свой первый рабочий процесс на базе ИИ. Можете
+          продолжать добавлять узлы на холст, строить более сложные потоки и
+          раскрывать возможности Crafty.
         </>
       ),
       action: (
         <div className="not-prose">
           <Button asChild onClick={handleFinishWelcome}>
-            <Link href="/">Continue</Link>
+            <Link href="/">Продолжить</Link>
           </Button>
         </div>
       ),

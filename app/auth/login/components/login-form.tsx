@@ -35,7 +35,7 @@ export const LoginForm = () => {
       const next = search.get('next') ?? '/';
       router.push(next);
     } catch (error: unknown) {
-      handleError('Error logging in with email', error);
+      handleError('Ошибка при входе с электронной почтой', error);
       setIsLoading(false);
     }
   };
@@ -45,11 +45,11 @@ export const LoginForm = () => {
       <form onSubmit={handleEmailLogin}>
         <div className="flex flex-col gap-6">
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Почта</Label>
             <Input
               id="email"
               type="email"
-              placeholder="jane@example.com"
+              placeholder="@example.com"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -57,12 +57,12 @@ export const LoginForm = () => {
           </div>
           <div className="grid gap-2">
             <div className="flex items-center">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Пароль</Label>
               <Link
                 href="/auth/forgot-password"
                 className="ml-auto inline-block text-muted-foreground text-xs underline-offset-4 hover:underline"
               >
-                Forgot your password?
+                Забыли ваш пароль?
               </Link>
             </div>
             <Input
@@ -75,7 +75,7 @@ export const LoginForm = () => {
             />
           </div>
           <Button type="submit" className="w-full" disabled={disabled}>
-            {isLoading ? 'Logging in...' : 'Login'}
+            {isLoading ? 'Вход...' : 'Войти'}
           </Button>
         </div>
       </form>
