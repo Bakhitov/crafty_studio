@@ -18,10 +18,18 @@ import {
   CodeBlockSelectTrigger,
   CodeBlockSelectValue,
 } from '@/components/ui/kibo-ui/code-block';
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { HTMLAttributes } from 'react';
 import ReactMarkdown, { type Options } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import {
+  Glimpse,
+  GlimpseContent,
+  GlimpseDescription,
+  GlimpseImage,
+  GlimpseTitle,
+  GlimpseTrigger,
+} from '@/components/ui/kibo-ui/glimpse';
 
 export type AIResponseProps = HTMLAttributes<HTMLDivElement> & {
   options?: Options;
@@ -49,16 +57,39 @@ const components: Options['components'] = {
       {children}
     </span>
   ),
-  a: ({ node, children, className, ...props }) => (
-    <a
-      className={cn('font-medium text-primary underline', className)}
-      target="_blank"
-      rel="noreferrer"
-      {...props}
-    >
-      {children}
-    </a>
-  ),
+  a: ({ node, children, className, ...props }) => {
+    const href = (props as any)?.href as string | undefined;
+    const isHttp = typeof href === 'string' && /^https?:\/\//i.test(href);
+
+    if (!isHttp) {
+      return (
+        <a
+          className={cn('font-medium text-primary underline', className)}
+          target="_blank"
+          rel="noreferrer"
+          {...props}
+        >
+          {children}
+        </a>
+      );
+    }
+
+    return (
+      <Glimpse>
+        <GlimpseTrigger asChild>
+          <a
+            className={cn('font-medium text-primary underline', className)}
+            target="_blank"
+            rel="noreferrer"
+            {...props}
+          >
+            {children}
+          </a>
+        </GlimpseTrigger>
+        <GlimpsePreview href={href!} />
+      </Glimpse>
+    );
+  },
   h1: ({ node, children, className, ...props }) => (
     <h1
       className={cn('mt-6 mb-2 font-semibold text-3xl', className)}
@@ -188,3 +219,44 @@ export const AIResponse = memo(
   ),
   (prevProps, nextProps) => prevProps.children === nextProps.children
 );
+
+// Мини-компонент предпросмотра ссылки для HoverCard
+const GlimpsePreview = ({ href }: { href: string }) => {
+  const [state, setState] = useState<
+    | { title: string | null; description: string | null; image: string | null }
+    | null
+  >(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/glimpse?url=${encodeURIComponent(href)}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          title: string | null;
+          description: string | null;
+          image: string | null;
+        };
+        if (!cancelled) setState(data);
+      } catch {
+        // no-op
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [href]);
+
+  return (
+    <GlimpseContent className="w-80">
+      {state?.image ? (
+        <GlimpseImage src={state.image} alt={state.title ?? ''} />
+      ) : null}
+      <GlimpseTitle>{state?.title ?? href}</GlimpseTitle>
+      <GlimpseDescription>
+        {state?.description ?? 'Загрузка превью...'}
+      </GlimpseDescription>
+    </GlimpseContent>
+  );
+};

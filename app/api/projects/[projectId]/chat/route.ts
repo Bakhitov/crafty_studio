@@ -3,7 +3,7 @@ import { parseError } from '@/lib/error/parse'
 import { createRateLimiter, slidingWindow } from '@/lib/rate-limit'
 import { trackCreditUsage } from '@/lib/stripe'
 import { database } from '@/lib/database'
-import { projectMessages, projects } from '@/schema'
+import { projectMessages, projects, prompts, tags as tagsTable, promptTags } from '@/schema'
 import { eq } from 'drizzle-orm'
 import { convertToModelMessages, streamText } from 'ai'
 import { gateway } from '@/lib/gateway'
@@ -74,6 +74,78 @@ export const POST = async (
           role: 'user',
           content: userText,
         })
+
+        // Extract and persist hashtags/prompts
+        try {
+          const { extractHashtags } = await import('@/lib/utils')
+          const rawTags = extractHashtags(userText)
+          if (rawTags.length > 0) {
+            // Simple mapper: look up by any labels match (en/ru/ko/kk)
+            const existing = await database.select().from(tagsTable)
+            const mapToEn = async (t: string) => {
+              const found = existing.find((row: any) => {
+                const labels = (row.labels ?? {}) as Record<string, string>
+                return Object.values(labels).some((v) => typeof v === 'string' && v.toLowerCase() === t.toLowerCase())
+                  || (row.keyEn?.toLowerCase?.() === t.toLowerCase())
+              })
+              return found?.keyEn ?? null
+            }
+            const enSet = new Set<string>()
+            const unknown: string[] = []
+            for (const t of rawTags) {
+              const en = await mapToEn(t)
+              if (en) enSet.add(en)
+              else unknown.push(t)
+            }
+
+            // Create private user tags for unknown values (basic slugify fallback)
+            const slugify = (s: string) =>
+              (
+                s
+                  .trim()
+                  .toLowerCase()
+                  .replace(/\s+/g, '-')
+                  .replace(/[^a-z0-9-_]/g, '-')
+                  .replace(/-+/g, '-')
+                  .replace(/^[-_]+|[-_]+$/g, '')
+              ) || `tag-${Date.now()}`
+
+            if (unknown.length > 0) {
+              for (const t of unknown) {
+                const keyEn = slugify(t)
+                try {
+                  await database.insert(tagsTable).values({
+                    keyEn,
+                    labels: { en: keyEn, ru: t },
+                    synonyms: {},
+                    isPublic: false,
+                    createdByUserId: user.id,
+                  })
+                  enSet.add(keyEn)
+                } catch {}
+              }
+            }
+            const tagsEn = Array.from(enSet)
+
+            // Save prompt record (denormalized for queries)
+            await database.insert(prompts).values({
+              userId: user.id,
+              projectId,
+              modality: 'Text',
+              textRaw: userText,
+              tagsEn,
+              jsonPayload: { modality: 'Text', tags: tagsEn },
+            })
+
+            // Link tags if we have canonical rows
+            if (tagsEn.length > 0) {
+              // Optionally: link prompt to tags when returning id is available
+              // No prompt_id from insert above (no returning in this helper) — skip junction for now or add later with returning()
+              // Could be enhanced to use .returning({ id: prompts.id }) when supported in env
+              // await database.insert(promptTags).values(...)
+            }
+          }
+        } catch {}
       }
     }
 

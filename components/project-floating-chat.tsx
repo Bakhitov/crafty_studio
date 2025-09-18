@@ -5,6 +5,7 @@ import { Trash2Icon, XIcon } from "lucide-react"
 import { ProjectChat } from "@/components/project-chat"
 import { Button } from "@/components/ui/button"
 import { RiChatAiLine } from "react-icons/ri"
+import { MdOutlineBookmarks } from "react-icons/md"
 import { createPortal } from "react-dom"
 import {
   Dialog,
@@ -100,8 +101,23 @@ export const ProjectFloatingChat = ({ projectId }: ProjectFloatingChatProps) => 
             }}
           >
             <div className="flex items-center justify-between border-b px-2 py-1">
-              <div className="text-sm pl-4 font-medium">AI агент</div>
+              <div className="flex items-center gap-2 pl-2">
+                <RiChatAiLine className="size-4 text-foreground" />
+                <span className="font-medium text-sm tracking-tight">
+                  Crafty <span className="italic font-serif text-lg">studio</span>
+                </span>
+              </div>
               <div className="flex items-center gap-1">
+                <Button
+                  title="Закладки"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    // TODO: открыть список сохранённых промптов/закладок
+                  }}
+                >
+                  <MdOutlineBookmarks className="size-4" />
+                </Button>
                 <Button
                   title="Очистить чат"
                   variant="ghost"

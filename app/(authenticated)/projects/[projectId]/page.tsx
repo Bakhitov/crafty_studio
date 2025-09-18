@@ -51,7 +51,12 @@ const Project = async ({ params }: ProjectProps) => {
     <div className="flex h-screen w-screen items-stretch overflow-hidden">
       <div className="relative flex-1">
         <ProjectProvider data={project}>
-          <Canvas>
+          <Canvas
+            fitViewOptions={{
+              padding: 0.25,
+              minZoom: 0,
+            }}
+          >
             <Controls />
             <Toolbar />
             <SaveIndicator />
