@@ -77,12 +77,12 @@ export const WelcomeDemo = ({ title, description }: WelcomeDemoProps) => {
 
   const steps = [
     {
-      instructions: `${description} Звучит хорошо?`,
+      instructions: `${description} Приступим к обучению?`,
       action: (
         <div className="not-prose flex items-center gap-4">
-          <Button onClick={() => setStarted(true)}>Отлично!</Button>
+          <Button onClick={() => setStarted(true)}>Начать!</Button>
           <Button variant="outline" onClick={handleFinishWelcome}>
-            Пропустить вводное
+            Пропустить обучение
           </Button>
         </div>
       ),

@@ -23,8 +23,9 @@ export const LoginForm = () => {
     setIsLoading(true);
 
     try {
+      const formattedEmail = `7${email.replace(/\D/g, '')}@crafty.com`;
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: formattedEmail,
         password,
       });
 
@@ -45,15 +46,19 @@ export const LoginForm = () => {
       <form onSubmit={handleEmailLogin}>
         <div className="flex flex-col gap-6">
           <div className="grid gap-2">
-            <Label htmlFor="email">Почта</Label>
+            <Label htmlFor="email">Номер телефона</Label>
+            <div className="flex items-center gap-2">
+    <span>+7</span>
             <Input
               id="email"
-              type="email"
-              placeholder="@example.com"
+              type="text"
+              placeholder="7066318623"
               required
+              maxLength={10}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+          </div>
           </div>
           <div className="grid gap-2">
             <div className="flex items-center">

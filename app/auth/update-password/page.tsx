@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import {
   Card,
   CardContent,
@@ -22,7 +23,9 @@ const LoginPage = () => (
       <CardDescription>{description}</CardDescription>
     </CardHeader>
     <CardContent className="bg-background pb-8">
-      <UpdatePasswordForm />
+      <Suspense fallback={<div>Loading...</div>}>
+        <UpdatePasswordForm />
+      </Suspense>
     </CardContent>
   </Card>
 );

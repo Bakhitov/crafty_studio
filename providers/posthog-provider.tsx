@@ -22,6 +22,7 @@ export const PostHogProvider = ({ children }: PostHogProviderProps) => {
       ui_host: 'https://us.posthog.com',
       capture_pageview: false, // We capture pageviews manually
       capture_pageleave: true, // Enable pageleave capture
+      autocapture: false, // Disable autocapture
     });
   }, []);
 

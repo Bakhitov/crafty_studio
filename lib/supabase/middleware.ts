@@ -47,6 +47,11 @@ export const updateSession = async (request: NextRequest) => {
     '/privacy',
     '/terms',
     '/acceptable-use',
+    '/ingest/**',
+    '/api/auth/send-otp',
+    '/api/auth/verify-register',
+    '/api/auth/send-password-reset-otp',
+    '/api/auth/verify-password-reset-otp',
   ];
 
   if (

@@ -11,7 +11,7 @@ import { uploadFile } from '@/lib/upload';
 import type { UserAttributes } from '@supabase/supabase-js';
 import { Loader2Icon } from 'lucide-react';
 import Image from 'next/image';
-import { type FormEventHandler, useEffect, useState } from 'react';
+import { type FormEventHandler, useEffect, useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -27,12 +27,22 @@ type ProfileProps = {
   setOpen: (open: boolean) => void;
 };
 
+// Function to normalize the email into a 10-digit phone number
+const formatEmailToPhone = (email: string) => {
+  if (!email.includes('@crafty.com')) {
+    return email; // Or handle as an error/default
+  }
+  return email.replace('@crafty.com', '').substring(1);
+};
+
 export const Profile = ({ open, setOpen }: ProfileProps) => {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(''); // This will store the original email
   const [image, setImage] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [password, setPassword] = useState('');
+
+  const displayPhone = useMemo(() => formatEmailToPhone(email), [email]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -62,7 +72,7 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
   const handleUpdateUser: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
 
-    if (!name.trim() || !email.trim() || isUpdating) {
+    if (!name.trim() || isUpdating) {
       return;
     }
 
@@ -82,13 +92,11 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
         };
       }
 
-      if (email.trim()) {
-        attributes.email = email;
-      }
-
       if (password.trim()) {
         attributes.password = password;
       }
+
+      // Do not update email/phone number as it's the primary identifier
 
       const response = await client.auth.updateUser(attributes);
 
@@ -145,7 +153,7 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
         <DialogHeader>
           <DialogTitle>Профиль</DialogTitle>
           <DialogDescription>
-            Обновите вашу информацию о профиле.
+            Информация о профиле.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">
@@ -197,21 +205,23 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="email">Почта</Label>
-            <Input
-              id="email"
-              placeholder="akhan@example.com"
-              value={email}
-              type="email"
-              onChange={({ target }) => setEmail(target.value)}
-              className="text-foreground"
-            />
+            <Label htmlFor="phone">Номер телефона</Label>
+            <div className="flex items-center gap-2">
+                <span>+7</span>
+                <Input
+                  id="phone"
+                  value={displayPhone}
+                  type="text"
+                  readOnly
+                  className="text-foreground bg-muted"
+                />
+            </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">Пароль</Label>
+            <Label htmlFor="password">Новый пароль</Label>
             <Input
               id="password"
-              placeholder="••••••••"
+              placeholder="•••••••• (оставьте пустым, чтобы не менять)"
               value={password}
               type="password"
               onChange={({ target }) => setPassword(target.value)}
@@ -220,7 +230,7 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
           </div>
           <Button
             type="submit"
-            disabled={isUpdating || !name.trim() || !email.trim()}
+            disabled={isUpdating || !name.trim()}
           >
             Обновить
           </Button>

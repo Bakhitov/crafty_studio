@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { SignUpForm } from './components/sign-up-form';
 
 const title = 'Регистрация';
-const description = 'Создайте аккаунт';
+const description = 'в Crafty studio';
 
 export const metadata = {
   title,
@@ -24,7 +24,7 @@ const LoginPage = () => (
       <CardTitle>{title}</CardTitle>
       <CardDescription>{description}</CardDescription>
     </CardHeader>
-    <CardContent className="rounded-b-xl border-b bg-background pb-8">
+    <CardContent className="rounded-b-xl border-b bg-background pb-8 items-center justify-center">
       <SignUpForm />
     </CardContent>
     <CardFooter className="flex items-center justify-center gap-1 p-4 text-xs">

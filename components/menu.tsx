@@ -19,6 +19,14 @@ import { Profile } from './profile';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 
+// Function to normalize the email into a 10-digit phone number
+const formatEmailToPhone = (email: string) => {
+  if (!email || !email.includes('@crafty.com')) {
+    return email; // Return original if not in expected format
+  }
+  return email.replace('@crafty.com', '').substring(1);
+};
+
 export const Menu = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -45,6 +53,8 @@ export const Menu = () => {
       </Button>
     );
   }
+
+  const displayPhone = user.email ? `+7${formatEmailToPhone(user.email)}` : user.id;
 
   return (
     <>
@@ -81,11 +91,11 @@ export const Menu = () => {
               </AvatarFallback>
             </Avatar>
             <p className="mt-2 truncate">
-              {user.user_metadata.name ?? user.email ?? user.id}
+              {user.user_metadata.name ?? displayPhone}
             </p>
             {user.user_metadata.name && user.email && (
               <p className="truncate font-normal text-muted-foreground text-xs">
-                {user.email}
+                {displayPhone}
               </p>
             )}
           </DropdownMenuLabel>

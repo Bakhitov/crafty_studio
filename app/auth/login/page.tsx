@@ -12,7 +12,7 @@ import { Suspense } from 'react';
 import { LoginForm } from './components/login-form';
 
 const title = 'Вход';
-const description = 'Введите email или выберите социальную сеть.';
+const description = 'в Crafty studio';
 
 export const metadata = {
   title,
