@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react"
 import useSWR from "swr"
 import { DefaultChatTransport } from "ai"
 import { Sparkles, Copy as CopyIcon, RotateCcw, Pencil } from "lucide-react"
-import { LuWholeWord } from "react-icons/lu"
+import { RiAiGenerateText, RiImageCircleAiLine, RiMicAiLine, RiFilmAiLine } from "react-icons/ri"
 import { MdBookmarkBorder, MdOutlineBookmark } from "react-icons/md"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -686,9 +686,12 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
             )
           })}
           {status === 'streaming' && (
-            <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
-              <Sparkles className="size-3 animate-pulse" />
-              <span>ИИ печатает…</span>
+            <div className="px-3 py-2 text-muted-foreground flex items-center gap-1">
+              <span className="inline-flex items-center gap-1">
+                <span className="size-1.5 rounded-full bg-current animate-bounce [animation-delay:-200ms]"></span>
+                <span className="size-1.5 rounded-full bg-current animate-bounce [animation-delay:-100ms]"></span>
+                <span className="size-1.5 rounded-full bg-current animate-bounce"></span>
+              </span>
             </div>
           )}
           {error && (
@@ -1001,7 +1004,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   : 'text-muted-foreground hover:bg-muted/50') + ' rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'
               }
             >
-                    <LuWholeWord className="size-4" />
+                    <RiAiGenerateText className="size-4" />
             </AIInputButton>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
@@ -1012,10 +1015,11 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
           </AIInputTools>
           <div className="flex items-center gap-2">
             {completionTyping && (
-              <div className="flex items-center gap-1 text-muted-foreground text-xs">
-                <Sparkles className="size-3 animate-pulse" />
-                <span>ИИ печатает…</span>
-              </div>
+              <span className="text-muted-foreground inline-flex items-center gap-1">
+                <span className="size-1.5 rounded-full bg-current animate-bounce [animation-delay:-200ms]"></span>
+                <span className="size-1.5 rounded-full bg-current animate-bounce [animation-delay:-100ms]"></span>
+                <span className="size-1.5 rounded-full bg-current animate-bounce"></span>
+              </span>
             )}
             <AIInputSubmit disabled={disabled} status={status} className="rounded-3xl" />
           </div>
