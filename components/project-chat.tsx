@@ -201,6 +201,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const [tagOpen, setTagOpen] = useState(false)
   const [tagIdx, setTagIdx] = useState(0)
   const tagTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [caretIndex, setCaretIndex] = useState(0)
+  const [selectedSynonymsByLabel, setSelectedSynonymsByLabel] = useState<Record<string, Set<string>>>({})
 
   const getCurrentHashtagLabels = (text: string): Set<string> => {
     const set = new Set<string>()
@@ -257,6 +259,104 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       if (nav) return nav
     }
     return 'en'
+  }
+
+  const findFirstHashtag = (text: string): { start: number; end: number; label: string } | null => {
+    const re = /(^|\s)#([\p{L}\p{N}_-]{1,64})(?:\s*\([^)]*\))?(?=\s|$)/u
+    const m = re.exec(text)
+    if (!m) return null
+    const leading = m[1] ?? ''
+    const full = m[0]
+    const tokenStart = (m.index ?? 0) + leading.length
+    const tokenText = full.slice(leading.length)
+    const tokenEnd = tokenStart + tokenText.length
+    const label = m[2] ?? ''
+    return { start: tokenStart, end: tokenEnd, label }
+  }
+
+  const insertTagAtSelection = (
+    label: string,
+    pickValue: string | undefined,
+    chosenSynonym?: string,
+    onlyLabel?: boolean
+  ) => {
+    const groupLabels = pickValue
+      ? Array.from(new Set(tagSuggestions.filter((o) => o.value === pickValue).map((o) => o.label)))
+      : []
+    const synonyms = onlyLabel
+      ? []
+      : (chosenSynonym
+          ? [chosenSynonym]
+          : groupLabels.filter((l) => l !== label))
+    const formatted = `#${label}${synonyms.length ? ` (${synonyms.join(', ')})` : ''}`
+
+    const where = findHashtagAt(inputValue, caretIndex) || findFirstHashtag(inputValue)
+    if (where) {
+      const next = inputValue.slice(0, where.start) + formatted + inputValue.slice(where.end)
+      setInputValue(next)
+      // поставить курсор в конец вставки
+      setTimeout(() => {
+        const el = textareaRef.current
+        try { el?.setSelectionRange(where.start + formatted.length, where.start + formatted.length) } catch {}
+      }, 0)
+      return
+    }
+    const needSpace = inputValue.length > 0 && !/\s$/.test(inputValue)
+    setInputValue(inputValue + (needSpace ? ' ' : '') + formatted)
+  }
+
+  const applySynonymsToText = (label: string, synonyms: string[]) => {
+    const formatted = `#${label}${synonyms.length ? ` (${synonyms.join(', ')})` : ''}`
+    // 1) Если курсор в теге этого label — заменяем его
+    const at = findHashtagAt(inputValue, caretIndex)
+    if (at && new RegExp(`^#${escapeForRegExp(label)}(\b|\s|$)`).test(at.token)) {
+      const next = inputValue.slice(0, at.start) + formatted + inputValue.slice(at.end)
+      setInputValue(next)
+      setTimeout(() => {
+        const el = textareaRef.current
+        try { el?.setSelectionRange(at.start + formatted.length, at.start + formatted.length) } catch {}
+      }, 0)
+      return
+    }
+    // 2) Иначе ищем первое вхождение #label в тексте и заменяем его
+    const re = new RegExp(`(^|\\s)#${escapeForRegExp(label)}(?:\\s*\\([^)]*\\))?(?=\\s|$)`, 'u')
+    const m = re.exec(inputValue)
+    if (m) {
+      const leading = m[1] ?? ''
+      const start = (m.index ?? 0) + leading.length
+      const end = start + (m[0].slice(leading.length)).length
+      const next = inputValue.slice(0, start) + formatted + inputValue.slice(end)
+      setInputValue(next)
+      setTimeout(() => {
+        const el = textareaRef.current
+        try { el?.setSelectionRange(start + formatted.length, start + formatted.length) } catch {}
+      }, 0)
+      return
+    }
+    // 3) Если тега нет — вставляем в позицию курсора/конец
+    const needSpace = inputValue.length > 0 && !/\s$/.test(inputValue)
+    const before = inputValue.slice(0, caretIndex)
+    const after = inputValue.slice(caretIndex)
+    const withSpace = (before.length > 0 && !/\s$/.test(before)) ? ' ' : ''
+    const next = before + withSpace + formatted + after
+    setInputValue(next)
+    setTimeout(() => {
+      const el = textareaRef.current
+      const pos = before.length + withSpace.length + formatted.length
+      try { el?.setSelectionRange(pos, pos) } catch {}
+    }, 0)
+  }
+
+  const toggleSynonym = (label: string, synonym: string) => {
+    setSelectedSynonymsByLabel((prev) => {
+      const next = { ...prev }
+      const set = new Set(next[label] ?? [])
+      if (set.has(synonym)) set.delete(synonym); else set.add(synonym)
+      next[label] = set
+      // После обновления стейта синхронно применим к тексту (используем вычисленный set)
+      applySynonymsToText(label, Array.from(set))
+      return next
+    })
   }
 
   const findHashtagAt = (
@@ -742,8 +842,9 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               setInputValue(val)
             // Hashtag suggestions debounce (по позиции курсора)
             const caret = (e.target as HTMLTextAreaElement).selectionStart ?? val.length
+            setCaretIndex(caret)
             const ht = findHashtagAt(val, caret)
-            const q = ht?.query ?? ''
+            const q = ht?.query ?? (findFirstHashtag(val)?.label ?? '')
             if (tagTimerRef.current) clearTimeout(tagTimerRef.current)
             if (ht && q.length >= 1 && !disabled) {
               tagTimerRef.current = setTimeout(async () => {
@@ -754,7 +855,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   const data = await res.json() as { options?: Array<{ label: string; value: string }> }
                   const opts = Array.isArray(data?.options) ? data.options.slice(0, 8) : []
                   setTagSuggestions(opts)
-                  setTagIdx(0)
+                  const activeIdx = Math.max(0, opts.findIndex((o) => o.label === q))
+                  setTagIdx(activeIdx)
                   setTagOpen(opts.length > 0)
                   setTagQuery(q)
                 } catch {
@@ -797,10 +899,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   const ht = findHashtagAt(inputValue, caret)
                   const pick = tagSuggestions[tagIdx]
                   if (ht && pick) {
-                    // Вставляем отформатированный тег: #label (синонимы)
-                    const groupLabels = Array.from(new Set(tagSuggestions.filter((o) => o.value === pick.value).map((o) => o.label)))
-                    const synonyms = groupLabels.filter((l) => l !== pick.label)
-                    const formatted = `#${pick.label}${synonyms.length ? ` (${synonyms.join(', ')})` : ''}`
+                    // Вставляем отформатированный тег: #label
+                    const formatted = `#${pick.label}`
                     const next = inputValue.slice(0, ht.start) + formatted + inputValue.slice(ht.end)
                     setInputValue(next)
                     setTagOpen(false)
@@ -909,7 +1009,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
             <pre
               ref={overlayRef}
               aria-hidden
-              className="pointer-events-none absolute inset-0 z-10 m-0 whitespace-pre-wrap break-words rounded-b-3xl bg-transparent"
+              className="pointer-events-none absolute inset-0 z-0 m-0 whitespace-pre-wrap break-words rounded-b-3xl bg-transparent"
             >
             {/* Подсветка хэштегов поверх textarea: обычный текст прозрачный, #теги видимы */}
             {(() => {
@@ -954,40 +1054,44 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
         </div>
         {/* Под полем: подсказки #тегов */}
         {(tagOpen && tagSuggestions.length > 0) ? (
-          <div className="px-2 pb-2 pt-1 flex flex-col gap-1">
-            {tagOpen && tagSuggestions.length > 0 ? (
-              <div className="px-2 py-2">
+          <div className="px-2 pb-2 bg-secondary flex flex-col gap-1 relative z-10">
+            <div className="px-2 py-2  backdrop-blur supports-[backdrop-filter]:bg-secondary">
                 {(() => {
-                  const uniq = Array.from(new Set(tagSuggestions.map((o) => o.value)))
-                  const title = uniq.length === 1 ? `#${uniq[0]}` : ''
-                  return title ? (
-                    <div className="px-1 mb-1.5 text-xs font-medium">{title}</div>
-                  ) : null
+                  const active = tagSuggestions[tagIdx]
+                  if (!active) return null
+                  const groupLabels = Array.from(new Set(tagSuggestions.filter((o) => o.value === active.value).map((o) => o.label)))
+                  if (groupLabels.length <= 1) return null
+                  const chosen = Array.from(selectedSynonymsByLabel[active.label] ?? [])
+                  return (
+                    <div className="p-2 text-xs text-foreground">
+                      <div className="mb-2 font-medium">#{active.label}:</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {groupLabels.filter((l) => l !== active.label).map((l) => {
+                          const picked = chosen.includes(l)
+                          return (
+                            <button
+                              key={l}
+                              type="button"
+                              className={
+                                `inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs ` +
+                                (picked
+                                  ? 'bg-primary text-primary-foreground border-primary'
+                                  : 'bg-background text-secondary-foreground hover:bg-secondary/80')
+                              }
+                              onClick={() => toggleSynonym(active.label, l)}
+                            >
+                              <span className="font-medium">{l}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
                 })()}
-                <div className="flex flex-wrap gap-2 max-h-56 overflow-auto">
-                  {tagSuggestions.map((opt, i) => (
-                    <button
-                      key={`${opt.value}-${i}`}
-                      type="button"
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ${
-                        getCurrentHashtagLabels(inputValue).has(opt.label)
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : (i === tagIdx
-                              ? 'bg-accent text-accent-foreground shadow-sm'
-                              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm')
-                      }`}
-                      onMouseEnter={() => setTagIdx(i)}
-                      onClick={() => insertOrRemoveTag(opt)}
-                    >
-                      <span className="truncate font-medium text-sky-600">#{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
               </div>
-            ) : null}
           </div>
         ) : null}
-        <AIInputToolbar className="border-none">
+        <AIInputToolbar className="border-none bg-background">
           <AIInputTools>
             <TooltipProvider>
               <Tooltip>
@@ -1007,7 +1111,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               aria-pressed={autocompleteEnabled}
               className={
                 (autocompleteEnabled
-                  ? 'text-primary bg-primary/10 hover:bg-primary/15'
+                  ? 'bg-secondary hover:bg-primary/10'
                   : 'text-muted-foreground hover:bg-muted/50') + ' rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'
               }
             >
