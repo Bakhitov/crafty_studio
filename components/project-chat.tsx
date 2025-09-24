@@ -1017,6 +1017,48 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   <p>{autocompleteEnabled ? 'Отключить автодополнение' : 'Включить автодополнение'}</p>
                 </TooltipContent>
               </Tooltip>
+              {/* Image toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AIInputButton
+                    aria-pressed={false}
+                    className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
+                  >
+                    <RiImageCircleAiLine className="size-4" />
+                  </AIInputButton>
+                </TooltipTrigger>
+                <TooltipContent className="z-[10000]">
+                  <p>Генерация изображения</p>
+                </TooltipContent>
+              </Tooltip>
+              {/* Voice toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AIInputButton
+                    aria-pressed={false}
+                    className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
+                  >
+                    <RiMicAiLine className="size-4" />
+                  </AIInputButton>
+                </TooltipTrigger>
+                <TooltipContent className="z-[10000]">
+                  <p>Голосовой режим</p>
+                </TooltipContent>
+              </Tooltip>
+              {/* Video toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AIInputButton
+                    aria-pressed={false}
+                    className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
+                  >
+                    <RiFilmAiLine className="size-4" />
+                  </AIInputButton>
+                </TooltipTrigger>
+                <TooltipContent className="z-[10000]">
+                  <p>Видео</p>
+                </TooltipContent>
+              </Tooltip>
             </TooltipProvider>
           </AIInputTools>
           <div className="flex items-center gap-2">
