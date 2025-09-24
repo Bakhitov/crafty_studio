@@ -187,6 +187,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const inputContainerRef = useRef<HTMLDivElement | null>(null)
 
   const [editOpen, setEditOpen] = useState(false)
+  const completionTyping = Boolean(autocompleteEnabled && !disabled && suggLoading)
   const [editId, setEditId] = useState<string | null>(null)
   const [editIdx, setEditIdx] = useState<number | null>(null)
   const [editText, setEditText] = useState<string>("")
@@ -684,6 +685,12 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               </div>
             )
           })}
+          {status === 'streaming' && (
+            <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
+              <Sparkles className="size-3 animate-pulse" />
+              <span>ИИ печатает…</span>
+            </div>
+          )}
           {error && (
             <div className="text-xs text-destructive">{String(error)}</div>
           )}
@@ -1003,7 +1010,15 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               </Tooltip>
             </TooltipProvider>
           </AIInputTools>
-          <AIInputSubmit disabled={disabled} status={status} className="rounded-3xl" />
+          <div className="flex items-center gap-2">
+            {completionTyping && (
+              <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                <Sparkles className="size-3 animate-pulse" />
+                <span>ИИ печатает…</span>
+              </div>
+            )}
+            <AIInputSubmit disabled={disabled} status={status} className="rounded-3xl" />
+          </div>
         </AIInputToolbar>
       </AIInput>
     </div>
