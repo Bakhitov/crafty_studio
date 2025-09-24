@@ -962,7 +962,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
         {(tagOpen && tagSuggestions.length > 0) ? (
           <div className="px-2 pb-2 pt-1 flex flex-col gap-1">
             {tagOpen && tagSuggestions.length > 0 ? (
-              <div className="px-2 py-2 rounded-xl border bg-popover/90 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-popover/60">
+              <div className="px-2 py-2 border bg-popover/90 backdrop-blur supports-[backdrop-filter]:bg-popover/60">
                 {/* Список лейблов */}
                 <div className="flex flex-wrap gap-2 max-h-56 overflow-auto">
                   {tagSuggestions.map((opt, i) => (
@@ -990,11 +990,11 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   const groupLabels = Array.from(new Set(tagSuggestions.filter((o) => o.value === active.value).map((o) => o.label)))
                   if (groupLabels.length <= 1) return null
                   return (
-                    <div className="mt-2 rounded-md bg-secondary/60 p-2 text-xs text-secondary-foreground">
+                    <div className="mt-2 bg-secondary/60 p-2 text-xs text-secondary-foreground">
                       <div className="mb-1 font-medium">Синонимы для #{active.label}:</div>
                       <div className="flex flex-wrap gap-1.5">
                         {groupLabels.filter((l) => l !== active.label).map((l) => (
-                          <span key={l} className="rounded-full bg-background px-2 py-0.5">
+                          <span key={l} className="bg-background px-2 py-0.5">
                             #{l}
                           </span>
                         ))}
