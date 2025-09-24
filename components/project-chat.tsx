@@ -202,7 +202,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
 
   const getCurrentHashtagLabels = (text: string): Set<string> => {
     const set = new Set<string>()
-    const re = /(^|\s)#([\p{L}\p{N}_-]{1,64})(?=\s|$)/gu
+    // Поддерживаем формат с опциональными скобками после лейбла: #label (тег1, тег2)
+    const re = /(^|\s)#([\p{L}\p{N}_-]{1,64})(?:\s*\([^)]*\))?(?=\s|$)/gu
     let m: RegExpExecArray | null
     while ((m = re.exec(text)) !== null) {
       const lbl = m[2]
@@ -213,11 +214,15 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
 
   const escapeForRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-  const insertOrRemoveTag = (label: string) => {
+  const insertOrRemoveTag = (optOrLabel: { label: string; value: string } | string) => {
+    const label = typeof optOrLabel === 'string' ? optOrLabel : optOrLabel.label
+    const pickValue = typeof optOrLabel === 'string'
+      ? (tagSuggestions.find((o) => o.label === optOrLabel)?.value)
+      : optOrLabel.value
     const exists = getCurrentHashtagLabels(inputValue).has(label)
     if (exists) {
-      // remove one or more occurrences safely
-      const re = new RegExp(`(^|\\s)#${escapeForRegExp(label)}(?=\\s|$)`, 'gu')
+      // remove one or more occurrences safely (с учётом скобок)
+      const re = new RegExp(`(^|\\s)#${escapeForRegExp(label)}(?:\\s*\\([^)]*\\))?(?=\\s|$)`, 'gu')
       const next = inputValue.replace(re, (m, p1) => (p1 ? p1 : ''))
         .replace(/\s{2,}/g, ' ')
         .trimStart()
@@ -225,12 +230,18 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       return
     }
     const ht = findCurrentHashtag(inputValue)
+    // Сформируем формат: #label (синоним1, синоним2, ...), используя варианты с тем же value
+    const groupLabels = pickValue
+      ? Array.from(new Set(tagSuggestions.filter((o) => o.value === pickValue).map((o) => o.label)))
+      : []
+    const synonyms = groupLabels.filter((l) => l !== label)
+    const formatted = `#${label}${synonyms.length ? ` (${synonyms.join(', ')})` : ''}`
     if (ht) {
-      const next = inputValue.slice(0, ht.start) + `#${label}` + inputValue.slice(ht.end)
+      const next = inputValue.slice(0, ht.start) + formatted + inputValue.slice(ht.end)
       setInputValue(next)
     } else {
       const needSpace = inputValue.length > 0 && !/\s$/.test(inputValue)
-      setInputValue(inputValue + (needSpace ? ' ' : '') + `#${label}`)
+      setInputValue(inputValue + (needSpace ? ' ' : '') + formatted)
     }
   }
 
@@ -755,10 +766,11 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   const ht = findCurrentHashtag(inputValue)
                   const pick = tagSuggestions[tagIdx]
                   if (ht && pick) {
-                    const lang = getUiLang()
-                    // Вставляем локализованный лейбл c #
-                    const localized = pick.label
-                    const next = inputValue.slice(0, ht.start) + `#${localized}` + inputValue.slice(ht.end)
+                    // Вставляем отформатированный тег: #label (синонимы)
+                    const groupLabels = Array.from(new Set(tagSuggestions.filter((o) => o.value === pick.value).map((o) => o.label)))
+                    const synonyms = groupLabels.filter((l) => l !== pick.label)
+                    const formatted = `#${pick.label}${synonyms.length ? ` (${synonyms.join(', ')})` : ''}`
+                    const next = inputValue.slice(0, ht.start) + formatted + inputValue.slice(ht.end)
                     setInputValue(next)
                     setTagOpen(false)
                     setTagSuggestions([])
@@ -885,7 +897,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 parts.push({ t: '', isTag: false })
               }
               return parts.map((p, i) => (
-                <span key={i} className={p.isTag ? 'text-current' : 'text-transparent'}>
+                <span key={i} className={p.isTag ? 'text-sky-500' : 'text-transparent'}>
                   {p.t}
                 </span>
               ))
@@ -920,9 +932,9 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                               : 'bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm')
                       }`}
                       onMouseEnter={() => setTagIdx(i)}
-                      onClick={() => insertOrRemoveTag(opt.label)}
+                      onClick={() => insertOrRemoveTag(opt)}
                     >
-                      <span className="truncate font-medium">#{opt.label}</span>
+                      <span className="truncate font-medium text-sky-600">#{opt.label}</span>
                     </button>
                   ))}
                 </div>
