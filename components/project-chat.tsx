@@ -4,7 +4,7 @@ import { useChat, useCompletion } from "@ai-sdk/react"
 import { useEffect, useRef, useState } from "react"
 import useSWR from "swr"
 import { DefaultChatTransport } from "ai"
-import { Sparkles, Copy as CopyIcon, RotateCcw, Pencil } from "lucide-react"
+import { Copy as CopyIcon, RotateCcw, Pencil } from "lucide-react"
 import { RiAiGenerateText, RiImageCircleAiLine, RiMicAiLine, RiFilmAiLine } from "react-icons/ri"
 import { MdBookmarkBorder, MdOutlineBookmark } from "react-icons/md"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -691,15 +691,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               </div>
             )
           })}
-          {status === 'streaming' && (
-            <div className="px-3 py-2 text-muted-foreground flex items-center gap-1">
-              <span className="inline-flex items-center gap-1">
-                <span className="size-1.5 rounded-full bg-current animate-bounce [animation-delay:-200ms]"></span>
-                <span className="size-1.5 rounded-full bg-current animate-bounce [animation-delay:-100ms]"></span>
-                <span className="size-1.5 rounded-full bg-current animate-bounce"></span>
-              </span>
-            </div>
-          )}
+          {/* typing animation in chat removed per request */}
           {error && (
             <div className="text-xs text-destructive">{String(error)}</div>
           )}
