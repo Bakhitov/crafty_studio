@@ -49,6 +49,7 @@ import {
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { Greeting } from "@/components/greeting"
 
 type ProjectChatProps = {
   projectId: string
@@ -495,6 +496,11 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     <div className="flex h-full flex-col">
       <AIConversation>
         <AIConversationContent>
+          {Array.isArray(messages) && messages.length === 0 && (
+            <div className="min-h-[40vh] flex items-center justify-center">
+              <Greeting />
+            </div>
+          )}
           {messages.map((m, idx) => {
             const anyMsg = m as any
             const parts = Array.isArray(anyMsg.parts) ? anyMsg.parts : null
