@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react"
 import useSWR from "swr"
 import { DefaultChatTransport } from "ai"
 import { Sparkles, Copy as CopyIcon, RotateCcw, Pencil } from "lucide-react"
-import { LuWholeWord } from "react-icons/lu"
+import { RiAiGenerateText, RiImageCircleAiLine, RiMicAiLine, RiFilmAiLine } from "react-icons/ri";
 import { MdBookmarkBorder, MdOutlineBookmark } from "react-icons/md"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -49,6 +49,7 @@ import {
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { Greeting } from "./greeting";
 
 type ProjectChatProps = {
   projectId: string
@@ -477,6 +478,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     <div className="flex h-full flex-col">
       <AIConversation>
         <AIConversationContent>
+          {messages.length === 0 && <Greeting />}
           {messages.map((m, idx) => {
             const anyMsg = m as any
             const parts = Array.isArray(anyMsg.parts) ? anyMsg.parts : null
@@ -1052,11 +1054,56 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   : 'text-muted-foreground hover:bg-muted/50') + ' rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'
               }
             >
-                    <LuWholeWord className="size-4" />
+                    <RiAiGenerateText className="size-4" />
             </AIInputButton>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
                   <p>{autocompleteEnabled ? 'Отключить автодополнение' : 'Включить автодополнение'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AIInputButton
+                    disabled
+                    className='text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'
+                  >
+                    <RiImageCircleAiLine className="size-4" />
+                  </AIInputButton>
+                </TooltipTrigger>
+                <TooltipContent className="z-[10000]">
+                  <p>Image generation (coming soon)</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AIInputButton
+                    disabled
+                    className='text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'
+                  >
+                    <RiMicAiLine className="size-4" />
+                  </AIInputButton>
+                </TooltipTrigger>
+                <TooltipContent className="z-[10000]">
+                  <p>Voice generation (coming soon)</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AIInputButton
+                    disabled
+                    className='text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'
+                  >
+                    <RiFilmAiLine className="size-4" />
+                  </AIInputButton>
+                </TooltipTrigger>
+                <TooltipContent className="z-[10000]">
+                  <p>Video generation (coming soon)</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

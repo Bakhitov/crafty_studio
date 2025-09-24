@@ -258,8 +258,8 @@ export const VideoTransform = ({
       {!loading && !data.generated?.url && (
         <div className="flex aspect-video w-full items-center justify-center rounded-b-xl bg-secondary">
           <p className="text-muted-foreground text-sm">
-            Press <PlayIcon size={12} className="-translate-y-px inline" /> to
-            generate video
+            Нажми на <PlayIcon size={12} className="-translate-y-px inline" /> чтобы
+            создать видео
           </p>
         </div>
       )}
@@ -278,7 +278,7 @@ export const VideoTransform = ({
       <Textarea
         value={data.instructions ?? ''}
         onChange={handleInstructionsChange}
-        placeholder="Enter instructions"
+        placeholder="Введите инструкции (необязательно)"
         className="shrink-0 resize-none rounded-none border-none bg-transparent! shadow-none focus-visible:ring-0"
       />
     </NodeLayout>

@@ -221,8 +221,8 @@ export const AudioTransform = ({
       {!loading && !data.generated?.url && (
         <div className="flex h-[50px] w-full items-center justify-center rounded-full bg-secondary">
           <p className="text-muted-foreground text-sm">
-            Press <PlayIcon size={12} className="-translate-y-px inline" /> to
-            generate audio
+            Нажми на <PlayIcon size={12} className="-translate-y-px inline" /> чтобы
+            создать аудио
           </p>
         </div>
       )}
@@ -237,7 +237,7 @@ export const AudioTransform = ({
       <Textarea
         value={data.instructions ?? ''}
         onChange={handleInstructionsChange}
-        placeholder="Enter instructions"
+        placeholder="Введите инструкции (необязательно)"
         className="shrink-0 resize-none rounded-none border-none bg-transparent! shadow-none focus-visible:ring-0"
       />
     </NodeLayout>

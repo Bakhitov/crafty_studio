@@ -53,7 +53,7 @@ const Project = async ({ params }: ProjectProps) => {
         <ProjectProvider data={project}>
           <Canvas
             fitViewOptions={{
-              padding: 0.25,
+              padding: 1.5,
               minZoom: 0,
             }}
           >

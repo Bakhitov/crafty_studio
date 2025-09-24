@@ -21,7 +21,7 @@ type ProjectFloatingChatProps = {
 }
 
 export const ProjectFloatingChat = ({ projectId }: ProjectFloatingChatProps) => {
-  const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(true)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [size, setSize] = useState<{ w: number; h: number } | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)

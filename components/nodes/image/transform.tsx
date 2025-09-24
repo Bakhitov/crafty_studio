@@ -357,8 +357,8 @@ export const ImageTransform = ({
           style={{ aspectRatio }}
         >
           <p className="text-muted-foreground text-sm">
-            Press <PlayIcon size={12} className="-translate-y-px inline" /> to
-            create an image
+            Нажми на <PlayIcon size={12} className="-translate-y-px inline" /> чтобы
+            создать изображение
           </p>
         </div>
       )}
@@ -380,7 +380,7 @@ export const ImageTransform = ({
       <Textarea
         value={data.instructions ?? ''}
         onChange={handleInstructionsChange}
-        placeholder="Enter instructions"
+        placeholder="Введите инструкции (необязательно)"
         className="shrink-0 resize-none rounded-none border-none bg-transparent! shadow-none focus-visible:ring-0"
       />
       {/* Удалили кастомный полноэкранный просмотр — теперь работает ImageZoom */}
