@@ -420,6 +420,56 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     return { start, end, token, query: m[2] ?? '' }
   }
 
+  // Пересчитать подсказки по хэштегам исходя из текущей позиции каретки
+  const recomputeTagSuggestions = (text: string, caret: number) => {
+    setCaretIndex(caret)
+    if (tagTimerRef.current) clearTimeout(tagTimerRef.current)
+
+    if (disabled) {
+      setTagOpen(false)
+      setTagSuggestions([])
+      setTagIdx(0)
+      setTagQuery('')
+      return
+    }
+
+    const ht = findHashtagAt(text, caret)
+    const q = ht?.query ?? ''
+
+    if (ht && q.length >= 1) {
+      tagTimerRef.current = setTimeout(async () => {
+        try {
+          const lang = getUiLang()
+          const res = await fetch(`/api/tags?lang=${encodeURIComponent(lang)}&search=${encodeURIComponent(q)}`)
+          if (!res.ok) {
+            setTagOpen(false)
+            setTagSuggestions([])
+            setTagIdx(0)
+            setTagQuery('')
+            return
+          }
+          const data = await res.json() as { options?: Array<{ label: string; value: string }> }
+          const opts = Array.isArray(data?.options) ? data.options.slice(0, 8) : []
+          setTagSuggestions(opts)
+          const activeIdx = Math.max(0, opts.findIndex((o) => o.label === q))
+          setTagIdx(activeIdx)
+          setTagOpen(opts.length > 0)
+          setTagQuery(q)
+        } catch {
+          setTagOpen(false)
+          setTagSuggestions([])
+          setTagIdx(0)
+          setTagQuery('')
+        }
+      }, 200)
+    } else {
+      setTagOpen(false)
+      setTagSuggestions([])
+      setTagIdx(0)
+      setTagQuery('')
+    }
+  }
+
   const getMessageText = (m: any): string => {
     if (Array.isArray(m?.parts)) {
       const t = m.parts.find((p: any) => p?.type === 'text')
@@ -872,45 +922,9 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
             onChange={(e) => {
               const val = e.target.value
               setInputValue(val)
-            // Hashtag suggestions debounce (по позиции курсора)
-            const caret = (e.target as HTMLTextAreaElement).selectionStart ?? val.length
-            setCaretIndex(caret)
-            const ht = findHashtagAt(val, caret)
-            const first = findFirstHashtag(val)
-            const q = ht?.query ?? (first?.label ?? '')
-            if (tagTimerRef.current) clearTimeout(tagTimerRef.current)
-            if (ht && q.length >= 1 && !disabled) {
-              tagTimerRef.current = setTimeout(async () => {
-                try {
-                  const lang = getUiLang()
-                  const res = await fetch(`/api/tags?lang=${encodeURIComponent(lang)}&search=${encodeURIComponent(q)}`)
-                  if (!res.ok) { setTagOpen(false); setTagSuggestions([]); return }
-                  const data = await res.json() as { options?: Array<{ label: string; value: string }> }
-                  const opts = Array.isArray(data?.options) ? data.options.slice(0, 8) : []
-                  setTagSuggestions(opts)
-                  const activeIdx = Math.max(0, opts.findIndex((o) => o.label === q))
-                  setTagIdx(activeIdx)
-                  setTagOpen(opts.length > 0)
-                  setTagQuery(q)
-                  // Если панель открывается по первому тегу (а курсор не в теге), переместим каретку на сам тег
-                  if (!ht && first && opts.length > 0) {
-                    setTimeout(() => {
-                      const el = textareaRef.current
-                      try {
-                        el?.setSelectionRange(first.start, first.start)
-                      } catch {}
-                    }, 0)
-                  }
-                } catch {
-                  setTagOpen(false)
-                }
-              }, 200)
-            } else {
-              setTagOpen(false)
-              setTagSuggestions([])
-              setTagIdx(0)
-              setTagQuery('')
-            }
+              // Пересчёт подсказок по хэштегу в позиции курсора
+              const caret = (e.target as HTMLTextAreaElement).selectionStart ?? val.length
+              recomputeTagSuggestions(val, caret)
               const t = val.trim()
               // Дебаунсим запрос к /api/completion и не дублируем одинаковый промпт
               if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current)
@@ -931,6 +945,24 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 lastPromptRef.current = ""
                 try { stopSuggestion() } catch {}
               }
+            }}
+            onClick={(e: React.MouseEvent<HTMLTextAreaElement>) => {
+              const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+              recomputeTagSuggestions(inputValue, caret)
+            }}
+            onMouseUp={(e: React.MouseEvent<HTMLTextAreaElement>) => {
+              const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+              recomputeTagSuggestions(inputValue, caret)
+            }}
+            onSelect={(e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+              const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+              recomputeTagSuggestions(inputValue, caret)
+            }}
+            onFocus={(e: React.FocusEvent<HTMLTextAreaElement>) => {
+              setTimeout(() => {
+                const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+                recomputeTagSuggestions(inputValue, caret)
+              }, 0)
             }}
             onKeyDown={(e) => {
               // Навигация по подсказкам хештегов
@@ -1046,6 +1078,17 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                     }
                   } catch {}
                 }, 0)
+              }
+            }}
+            onKeyUp={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+              // Переключение активного #label при перемещении каретки без изменения текста
+              const navKeys = new Set([
+                'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+                'Home', 'End', 'PageUp', 'PageDown'
+              ])
+              if (navKeys.has(e.key)) {
+                const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+                recomputeTagSuggestions(inputValue, caret)
               }
             }}
           placeholder={disabled ? "Недостаточно кредитов" : "Введите сообщение..."}
