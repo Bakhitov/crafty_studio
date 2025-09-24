@@ -95,6 +95,35 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const lastPromptRef = useRef<string>("")
   const [autocompleteEnabled, setAutocompleteEnabled] = useState(false)
 
+  // If autocomplete toggles ON while there is already text, kick off suggestion immediately
+  useEffect(() => {
+    if (!autocompleteEnabled) return
+    const t = inputValue.trim()
+    const canSuggest = t.length >= 3 && !disabled && !loading
+    if (!canSuggest) return
+    // If we don't have an active/visible suggestion for this text, start one
+    if (lastPromptRef.current !== t || (!suggLoading && !(suggestion ?? '').trim())) {
+      try { stopSuggestion() } catch {}
+      void runSuggestion(t, { body: { temperature: 0.3 } })
+      lastPromptRef.current = t
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autocompleteEnabled])
+
+  // Persist input value across chat close/open
+  const inputStorageKey = `project-chat:input:${projectId}`
+  useEffect(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem(inputStorageKey) : null
+      if (raw != null) setInputValue(raw)
+    } catch {}
+  }, [projectId])
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') localStorage.setItem(inputStorageKey, inputValue)
+    } catch {}
+  }, [projectId, inputValue])
+
   // Persist/rehydrate messages in localStorage to avoid refetch on every open
   const storageKey = `project-chat:messages:${projectId}`
   const hydratedRef = useRef(false)
@@ -537,9 +566,10 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       const lineH = parsePx(cs.lineHeight) || parsePx(cs.fontSize) * 1.2 || 20
       const padT = parsePx(cs.paddingTop) || 0
       const padB = parsePx(cs.paddingBottom) || 0
-      const maxH = Math.round(lineH * 10 + padT + padB)
+      const maxH = Math.round(lineH * 30 + padT + padB)
 
       // контентная высота = максимум из текста и оверлея
+      const prevScrollTop = ta.scrollTop
       ta.style.height = 'auto'
       const taH = ta.scrollHeight
       const ovH = ov ? ov.scrollHeight : 0
@@ -548,6 +578,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
 
       ta.style.height = `${clampedH}px`
       ta.style.overflowY = contentH > maxH ? 'auto' : 'hidden'
+      // восстановим прежнюю прокрутку, чтобы не прыгало вверх
+      try { ta.scrollTop = prevScrollTop } catch {}
       if (ov) {
         ov.style.height = `${clampedH}px`
       }
@@ -844,7 +876,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
             const caret = (e.target as HTMLTextAreaElement).selectionStart ?? val.length
             setCaretIndex(caret)
             const ht = findHashtagAt(val, caret)
-            const q = ht?.query ?? (findFirstHashtag(val)?.label ?? '')
+            const first = findFirstHashtag(val)
+            const q = ht?.query ?? (first?.label ?? '')
             if (tagTimerRef.current) clearTimeout(tagTimerRef.current)
             if (ht && q.length >= 1 && !disabled) {
               tagTimerRef.current = setTimeout(async () => {
@@ -859,6 +892,15 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   setTagIdx(activeIdx)
                   setTagOpen(opts.length > 0)
                   setTagQuery(q)
+                  // Если панель открывается по первому тегу (а курсор не в теге), переместим каретку на сам тег
+                  if (!ht && first && opts.length > 0) {
+                    setTimeout(() => {
+                      const el = textareaRef.current
+                      try {
+                        el?.setSelectionRange(first.start, first.start)
+                      } catch {}
+                    }, 0)
+                  }
                 } catch {
                   setTagOpen(false)
                 }
@@ -875,7 +917,9 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               const canSuggest = t.length >= 3 && !disabled && !loading && autocompleteEnabled
               if (canSuggest) {
                 suggestTimerRef.current = setTimeout(async () => {
-                  if (lastPromptRef.current === t) return
+                  // Запускаем, даже если текст не изменился, но курсор менялся/скроллили —
+                  // перезапустим стрим при отсутствии активного стрима
+                  if (lastPromptRef.current === t && suggestionTrimmed) return
                   try {
                     // Останавливаем предыдущий стрим подсказки, если идёт
                     try { stopSuggestion() } catch {}
@@ -939,7 +983,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                         const lineH = parsePx(cs.lineHeight) || parsePx(cs.fontSize) * 1.2 || 20
                         const padT = parsePx(cs.paddingTop) || 0
                         const padB = parsePx(cs.paddingBottom) || 0
-                        const maxH = Math.round(lineH * 10 + padT + padB)
+                        const maxH = Math.round(lineH * 30 + padT + padB)
                         el.style.height = 'auto'
                         const taH = el.scrollHeight
                         const ovH = ov ? ov.scrollHeight : 0
@@ -952,6 +996,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                           inputContainerRef.current.style.height = `${clampedH}px`
                           inputContainerRef.current.style.overflowY = 'hidden'
                         }
+                        // Прокрутка инпута вниз после применения completion
+                        try { el.scrollTop = el.scrollHeight } catch {}
                       }
                     } catch {}
                   }, 0)
@@ -984,7 +1030,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                       const lineH = parsePx(cs.lineHeight) || parsePx(cs.fontSize) * 1.2 || 20
                       const padT = parsePx(cs.paddingTop) || 0
                       const padB = parsePx(cs.paddingBottom) || 0
-                      const maxH = Math.round(lineH * 10 + padT + padB)
+                      const maxH = Math.round(lineH * 30 + padT + padB)
                       const ov = overlayRef.current
                       const taH = el.scrollHeight
                       const ovH = ov ? ov.scrollHeight : 0
