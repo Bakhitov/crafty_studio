@@ -938,8 +938,17 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 </span>
               ))
             })()}
-            {showGhost && displayRemainder ? (
-                <span className="text-muted-foreground/60">{displayRemainder}</span>
+            {showGhost && (displayRemainder || completionTyping) ? (
+                <span className="text-muted-foreground/60">
+                  {displayRemainder}
+                  {completionTyping ? (
+                    <span className="inline-flex items-center align-baseline ml-1 gap-0.5">
+                      <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-200ms]"></span>
+                      <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-100ms]"></span>
+                      <span className="h-1 w-1 rounded-full bg-current animate-bounce"></span>
+                    </span>
+                  ) : null}
+                </span>
               ) : null}
             </pre>
         </div>
@@ -1054,13 +1063,6 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
             </TooltipProvider>
           </AIInputTools>
           <div className="flex items-center gap-2">
-            {completionTyping && (
-              <span className="text-muted-foreground inline-flex items-center gap-1">
-                <span className="size-1.5 rounded-full bg-current animate-bounce [animation-delay:-200ms]"></span>
-                <span className="size-1.5 rounded-full bg-current animate-bounce [animation-delay:-100ms]"></span>
-                <span className="size-1.5 rounded-full bg-current animate-bounce"></span>
-              </span>
-            )}
             <AIInputSubmit disabled={disabled} status={status} className="rounded-3xl" />
           </div>
         </AIInputToolbar>
