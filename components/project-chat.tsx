@@ -257,6 +257,27 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     return 'en'
   }
 
+  const findHashtagAt = (
+    text: string,
+    caret: number
+  ): { start: number; end: number; token: string; query: string } | null => {
+    // Ищем токен вида #label (опционально со скобками) под курсором
+    const re = /(^|\s)#([\p{L}\p{N}_-]{0,64})(?:\s*\([^)]*\))?(?=\s|$)/gu
+    let m: RegExpExecArray | null
+    while ((m = re.exec(text)) !== null) {
+      const leading = m[1] ?? ''
+      const full = m[0]
+      const tokenStart = m.index + leading.length
+      const tokenText = full.slice(leading.length)
+      const tokenEnd = tokenStart + tokenText.length
+      if (caret >= tokenStart && caret <= tokenEnd) {
+        const label = m[2] ?? ''
+        return { start: tokenStart, end: tokenEnd, token: tokenText, query: label }
+      }
+    }
+    return null
+  }
+
   const findCurrentHashtag = (text: string): { start: number; end: number; token: string; query: string } | null => {
     // Найти последний #токен до курсора (без учёта курсора для простоты — по концу строки)
     const re = /(^|\s)#([\p{L}\p{N}_-]{0,64})$/u
@@ -711,8 +732,9 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
             onChange={(e) => {
               const val = e.target.value
               setInputValue(val)
-            // Hashtag suggestions debounce
-            const ht = findCurrentHashtag(val)
+            // Hashtag suggestions debounce (по позиции курсора)
+            const caret = (e.target as HTMLTextAreaElement).selectionStart ?? val.length
+            const ht = findHashtagAt(val, caret)
             const q = ht?.query ?? ''
             if (tagTimerRef.current) clearTimeout(tagTimerRef.current)
             if (ht && q.length >= 1 && !disabled) {
@@ -763,7 +785,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 if (e.key === 'ArrowUp') { e.preventDefault(); setTagIdx((i) => Math.max(i - 1, 0)); return }
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  const ht = findCurrentHashtag(inputValue)
+                  const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+                  const ht = findHashtagAt(inputValue, caret)
                   const pick = tagSuggestions[tagIdx]
                   if (ht && pick) {
                     // Вставляем отформатированный тег: #label (синонимы)
@@ -776,6 +799,11 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                     setTagSuggestions([])
                     setTagIdx(0)
                     setTagQuery('')
+                    // Переместим курсор в конец вставленного токена
+                    setTimeout(() => {
+                      const el = textareaRef.current
+                      try { el?.setSelectionRange(ht.start + formatted.length, ht.start + formatted.length) } catch {}
+                    }, 0)
                     return
                   }
                 }
