@@ -91,19 +91,6 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       // игнорируем UI-ошибку подсказки, чат работает отдельно
     },
   })
-  // Ещё 2 альтернативных варианта
-  const {
-    completion: alt1,
-    stop: stopAlt1,
-    complete: runAlt1,
-    setCompletion: setAlt1,
-  } = useCompletion({ api: '/api/completion', streamProtocol: 'text', experimental_throttle: 80 })
-  const {
-    completion: alt2,
-    stop: stopAlt2,
-    complete: runAlt2,
-    setCompletion: setAlt2,
-  } = useCompletion({ api: '/api/completion', streamProtocol: 'text', experimental_throttle: 80 })
   const suggestTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastPromptRef = useRef<string>("")
   const [autocompleteEnabled, setAutocompleteEnabled] = useState(false)
@@ -199,10 +186,9 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const overlayRef = useRef<HTMLPreElement | null>(null)
   const inputContainerRef = useRef<HTMLDivElement | null>(null)
-  const alt1Trim = (alt1 ?? '').trim()
-  const alt2Trim = (alt2 ?? '').trim()
 
   const [editOpen, setEditOpen] = useState(false)
+  const completionTyping = Boolean(autocompleteEnabled && !disabled && suggLoading)
   const [editId, setEditId] = useState<string | null>(null)
   const [editIdx, setEditIdx] = useState<number | null>(null)
   const [editText, setEditText] = useState<string>("")
@@ -218,7 +204,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
 
   const getCurrentHashtagLabels = (text: string): Set<string> => {
     const set = new Set<string>()
-    const re = /(^|\s)#([\p{L}\p{N}_-]{1,64})(?=\s|$)/gu
+    // Поддерживаем формат с опциональными скобками после лейбла: #label (тег1, тег2)
+    const re = /(^|\s)#([\p{L}\p{N}_-]{1,64})(?:\s*\([^)]*\))?(?=\s|$)/gu
     let m: RegExpExecArray | null
     while ((m = re.exec(text)) !== null) {
       const lbl = m[2]
@@ -229,11 +216,15 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
 
   const escapeForRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-  const insertOrRemoveTag = (label: string) => {
+  const insertOrRemoveTag = (optOrLabel: { label: string; value: string } | string) => {
+    const label = typeof optOrLabel === 'string' ? optOrLabel : optOrLabel.label
+    const pickValue = typeof optOrLabel === 'string'
+      ? (tagSuggestions.find((o) => o.label === optOrLabel)?.value)
+      : optOrLabel.value
     const exists = getCurrentHashtagLabels(inputValue).has(label)
     if (exists) {
-      // remove one or more occurrences safely
-      const re = new RegExp(`(^|\\s)#${escapeForRegExp(label)}(?=\\s|$)`, 'gu')
+      // remove one or more occurrences safely (с учётом скобок)
+      const re = new RegExp(`(^|\\s)#${escapeForRegExp(label)}(?:\\s*\\([^)]*\\))?(?=\\s|$)`, 'gu')
       const next = inputValue.replace(re, (m, p1) => (p1 ? p1 : ''))
         .replace(/\s{2,}/g, ' ')
         .trimStart()
@@ -241,12 +232,18 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       return
     }
     const ht = findCurrentHashtag(inputValue)
+    // Сформируем формат: #label (синоним1, синоним2, ...), используя варианты с тем же value
+    const groupLabels = pickValue
+      ? Array.from(new Set(tagSuggestions.filter((o) => o.value === pickValue).map((o) => o.label)))
+      : []
+    const synonyms = groupLabels.filter((l) => l !== label)
+    const formatted = `#${label}${synonyms.length ? ` (${synonyms.join(', ')})` : ''}`
     if (ht) {
-      const next = inputValue.slice(0, ht.start) + `#${label}` + inputValue.slice(ht.end)
+      const next = inputValue.slice(0, ht.start) + formatted + inputValue.slice(ht.end)
       setInputValue(next)
     } else {
       const needSpace = inputValue.length > 0 && !/\s$/.test(inputValue)
-      setInputValue(inputValue + (needSpace ? ' ' : '') + `#${label}`)
+      setInputValue(inputValue + (needSpace ? ' ' : '') + formatted)
     }
   }
 
@@ -260,6 +257,27 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       if (nav) return nav
     }
     return 'en'
+  }
+
+  const findHashtagAt = (
+    text: string,
+    caret: number
+  ): { start: number; end: number; token: string; query: string } | null => {
+    // Ищем токен вида #label (опционально со скобками) под курсором
+    const re = /(^|\s)#([\p{L}\p{N}_-]{0,64})(?:\s*\([^)]*\))?(?=\s|$)/gu
+    let m: RegExpExecArray | null
+    while ((m = re.exec(text)) !== null) {
+      const leading = m[1] ?? ''
+      const full = m[0]
+      const tokenStart = m.index + leading.length
+      const tokenText = full.slice(leading.length)
+      const tokenEnd = tokenStart + tokenText.length
+      if (caret >= tokenStart && caret <= tokenEnd) {
+        const label = m[2] ?? ''
+        return { start: tokenStart, end: tokenEnd, token: tokenText, query: label }
+      }
+    }
+    return null
   }
 
   const findCurrentHashtag = (text: string): { start: number; end: number; token: string; query: string } | null => {
@@ -669,6 +687,12 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               </div>
             )
           })}
+          {status === 'streaming' && (
+            <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
+              <Sparkles className="size-3 animate-pulse" />
+              <span>ИИ печатает…</span>
+            </div>
+          )}
           {error && (
             <div className="text-xs text-destructive">{String(error)}</div>
           )}
@@ -707,10 +731,6 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
           // Останавливаем текущую подсказку
           try { stopSuggestion() } catch {}
           setSuggestion("")
-          try { stopAlt1() } catch {}
-          try { stopAlt2() } catch {}
-          setAlt1("")
-          setAlt2("")
         }}
         className="mt-2 rounded-b-3xl rounded-t-none border shadow-sm"
       >
@@ -721,8 +741,9 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
             onChange={(e) => {
               const val = e.target.value
               setInputValue(val)
-            // Hashtag suggestions debounce
-            const ht = findCurrentHashtag(val)
+            // Hashtag suggestions debounce (по позиции курсора)
+            const caret = (e.target as HTMLTextAreaElement).selectionStart ?? val.length
+            const ht = findHashtagAt(val, caret)
             const q = ht?.query ?? ''
             if (tagTimerRef.current) clearTimeout(tagTimerRef.current)
             if (ht && q.length >= 1 && !disabled) {
@@ -757,21 +778,13 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   try {
                     // Останавливаем предыдущий стрим подсказки, если идёт
                     try { stopSuggestion() } catch {}
-                    await Promise.allSettled([
-                      runSuggestion(t, { body: { temperature: 0.3 } }),
-                      (async () => { try { stopAlt1() } catch {}; await runAlt1(t, { body: { temperature: 0.7 } }) })(),
-                      (async () => { try { stopAlt2() } catch {}; await runAlt2(t, { body: { temperature: 0.95 } }) })(),
-                    ])
+                    await runSuggestion(t, { body: { temperature: 0.3 } })
                     lastPromptRef.current = t
                   } catch {}
                 }, 2000)
               } else {
                 lastPromptRef.current = ""
                 try { stopSuggestion() } catch {}
-                try { stopAlt1() } catch {}
-                try { stopAlt2() } catch {}
-                setAlt1("")
-                setAlt2("")
               }
             }}
             onKeyDown={(e) => {
@@ -781,18 +794,25 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 if (e.key === 'ArrowUp') { e.preventDefault(); setTagIdx((i) => Math.max(i - 1, 0)); return }
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  const ht = findCurrentHashtag(inputValue)
+                  const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+                  const ht = findHashtagAt(inputValue, caret)
                   const pick = tagSuggestions[tagIdx]
                   if (ht && pick) {
-                    const lang = getUiLang()
-                    // Вставляем локализованный лейбл c #
-                    const localized = pick.label
-                    const next = inputValue.slice(0, ht.start) + `#${localized}` + inputValue.slice(ht.end)
+                    // Вставляем отформатированный тег: #label (синонимы)
+                    const groupLabels = Array.from(new Set(tagSuggestions.filter((o) => o.value === pick.value).map((o) => o.label)))
+                    const synonyms = groupLabels.filter((l) => l !== pick.label)
+                    const formatted = `#${pick.label}${synonyms.length ? ` (${synonyms.join(', ')})` : ''}`
+                    const next = inputValue.slice(0, ht.start) + formatted + inputValue.slice(ht.end)
                     setInputValue(next)
                     setTagOpen(false)
                     setTagSuggestions([])
                     setTagIdx(0)
                     setTagQuery('')
+                    // Переместим курсор в конец вставленного токена
+                    setTimeout(() => {
+                      const el = textareaRef.current
+                      try { el?.setSelectionRange(ht.start + formatted.length, ht.start + formatted.length) } catch {}
+                    }, 0)
                     return
                   }
                 }
@@ -838,10 +858,6 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   }, 0)
                   // Сбрасываем текущие рекомендации, чтобы не можно было добавить повторно
                   setSuggestion('')
-                  try { stopAlt1() } catch {}
-                  try { stopAlt2() } catch {}
-                  setAlt1('')
-                  setAlt2('')
                 }
               }
               // Submit on Enter (без модификаторов). Shift+Enter — перенос строки
@@ -858,10 +874,6 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 setInputValue('')
                 setSuggestion('')
                 try { stopSuggestion() } catch {}
-                try { stopAlt1() } catch {}
-                try { stopAlt2() } catch {}
-                setAlt1('')
-                setAlt2('')
                 // Обновим высоту после очистки
                 setTimeout(() => {
                   try {
@@ -922,7 +934,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 parts.push({ t: '', isTag: false })
               }
               return parts.map((p, i) => (
-                <span key={i} className={p.isTag ? 'text-current' : 'text-transparent'}>
+                <span key={i} className={p.isTag ? 'text-sky-500' : 'text-transparent'}>
                   {p.t}
                 </span>
               ))
@@ -932,8 +944,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               ) : null}
             </pre>
         </div>
-        {/* Под полем: сначала подсказки #тегов, затем альтернативы автодополнения */}
-        {((tagOpen && tagSuggestions.length > 0) || ((alt1Trim || alt2Trim) && (inputValue.trim().length >= 3) && !disabled)) ? (
+        {/* Под полем: подсказки #тегов */}
+        {(tagOpen && tagSuggestions.length > 0) ? (
           <div className="px-2 pb-2 pt-1 flex flex-col gap-1">
             {tagOpen && tagSuggestions.length > 0 ? (
               <div className="px-2 py-2">
@@ -957,72 +969,13 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                               : 'bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm')
                       }`}
                       onMouseEnter={() => setTagIdx(i)}
-                      onClick={() => insertOrRemoveTag(opt.label)}
+                      onClick={() => insertOrRemoveTag(opt)}
                     >
-                      <span className="truncate font-medium">#{opt.label}</span>
+                      <span className="truncate font-medium text-sky-600">#{opt.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
-            ) : null}
-
-            {(alt1Trim || alt2Trim) && (inputValue.trim().length >= 3) && !disabled ? (
-              <>
-            {alt1Trim ? (
-              <button
-                type="button"
-                className="w-full cursor-pointer rounded-md border bg-muted/30 px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted/50"
-                onClick={() => {
-                  const altNeedSpace = (/[\p{L}\p{N}]$/u.test(inputValue) && !/\s$/.test(inputValue) && !/^[\s.,;:!?)/\]}]/.test(alt1Trim))
-                  const toAppend = altNeedSpace ? ` ${alt1Trim}` : alt1Trim
-                  const next = inputValue + toAppend
-                  setInputValue(next)
-                  try { stopSuggestion() } catch {}
-                  try { stopAlt1() } catch {}
-                  try { stopAlt2() } catch {}
-                  setSuggestion('')
-                  setAlt1('')
-                  setAlt2('')
-                  setTimeout(() => {
-                    const el = textareaRef.current
-                    if (el) {
-                      const pos = next.length
-                      try { el.setSelectionRange(pos, pos) } catch {}
-                    }
-                  }, 0)
-                }}
-              >
-                {(/[\p{L}\p{N}]$/u.test(inputValue) && !/\s$/.test(inputValue) && !/^[\s.,;:!?)/\]}]/.test(alt1Trim)) ? ` ${alt1Trim}` : alt1Trim}
-              </button>
-            ) : null}
-            {alt2Trim ? (
-              <button
-                type="button"
-                className="w-full cursor-pointer rounded-md border bg-muted/30 px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted/50"
-                onClick={() => {
-                  const altNeedSpace = (/[\p{L}\p{N}]$/u.test(inputValue) && !/\s$/.test(inputValue) && !/^[\s.,;:!?)/\]}]/.test(alt2Trim))
-                  const toAppend = altNeedSpace ? ` ${alt2Trim}` : alt2Trim
-                  const next = inputValue + toAppend
-                  setInputValue(next)
-                  try { stopSuggestion() } catch {}
-                  try { stopAlt1() } catch {}
-                  try { stopAlt2() } catch {}
-                  setSuggestion('')
-                  setAlt1('')
-                  setAlt2('')
-                  setTimeout(() => {
-                    const el = textareaRef.current
-                    if (el) {
-                      const pos = next.length
-                      try { el.setSelectionRange(pos, pos) } catch {}
-                    }
-                  }, 0)
-                }}
-              >
-                {(/[\p{L}\p{N}]$/u.test(inputValue) && !/\s$/.test(inputValue) && !/^[\s.,;:!?)/\]}]/.test(alt2Trim)) ? ` ${alt2Trim}` : alt2Trim}
-              </button>
-                ) : null}
-              </>
             ) : null}
           </div>
         ) : null}
@@ -1038,11 +991,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   if (!next) {
                     if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current)
                     try { stopSuggestion() } catch {}
-                    try { stopAlt1() } catch {}
-                    try { stopAlt2() } catch {}
                     setSuggestion('')
-                    setAlt1('')
-                    setAlt2('')
                   }
                   return next
                 })
@@ -1108,7 +1057,15 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               </Tooltip>
             </TooltipProvider>
           </AIInputTools>
-          <AIInputSubmit disabled={disabled} status={status} className="rounded-3xl" />
+          <div className="flex items-center gap-2">
+            {completionTyping && (
+              <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                <Sparkles className="size-3 animate-pulse" />
+                <span>ИИ печатает…</span>
+              </div>
+            )}
+            <AIInputSubmit disabled={disabled} status={status} className="rounded-3xl" />
+          </div>
         </AIInputToolbar>
       </AIInput>
     </div>
