@@ -280,6 +280,12 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     return null
   }
 
+  const findFirstHashtagLabel = (text: string): string | null => {
+    const re = /(^|\s)#([\p{L}\p{N}_-]{1,64})/u
+    const m = text.match(re)
+    return m?.[2] ?? null
+  }
+
   const findCurrentHashtag = (text: string): { start: number; end: number; token: string; query: string } | null => {
     // Найти последний #токен до курсора (без учёта курсора для простоты — по концу строки)
     const re = /(^|\s)#([\p{L}\p{N}_-]{0,64})$/u
@@ -740,12 +746,12 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
             onChange={(e) => {
               const val = e.target.value
               setInputValue(val)
-            // Hashtag suggestions debounce (по позиции курсора)
+            // Hashtag suggestions debounce (по позиции курсора, иначе по первому тегу в тексте)
             const caret = (e.target as HTMLTextAreaElement).selectionStart ?? val.length
             const ht = findHashtagAt(val, caret)
-            const q = ht?.query ?? ''
+            const q = ht?.query ?? (findFirstHashtagLabel(val) ?? '')
             if (tagTimerRef.current) clearTimeout(tagTimerRef.current)
-            if (ht && q.length >= 1 && !disabled) {
+            if (q.length >= 1 && !disabled) {
               tagTimerRef.current = setTimeout(async () => {
                 try {
                   const lang = getUiLang()
@@ -956,14 +962,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
         {(tagOpen && tagSuggestions.length > 0) ? (
           <div className="px-2 pb-2 pt-1 flex flex-col gap-1">
             {tagOpen && tagSuggestions.length > 0 ? (
-              <div className="px-2 py-2">
-                {(() => {
-                  const uniq = Array.from(new Set(tagSuggestions.map((o) => o.value)))
-                  const title = uniq.length === 1 ? `#${uniq[0]}` : ''
-                  return title ? (
-                    <div className="px-1 mb-1.5 text-xs font-medium">{title}</div>
-                  ) : null
-                })()}
+              <div className="px-2 py-2 rounded-xl border bg-popover/90 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-popover/60">
+                {/* Список лейблов */}
                 <div className="flex flex-wrap gap-2 max-h-56 overflow-auto">
                   {tagSuggestions.map((opt, i) => (
                     <button
@@ -983,6 +983,25 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                     </button>
                   ))}
                 </div>
+                {/* Синонимы активного лейбла */}
+                {(() => {
+                  const active = tagSuggestions[tagIdx]
+                  if (!active) return null
+                  const groupLabels = Array.from(new Set(tagSuggestions.filter((o) => o.value === active.value).map((o) => o.label)))
+                  if (groupLabels.length <= 1) return null
+                  return (
+                    <div className="mt-2 rounded-md bg-secondary/60 p-2 text-xs text-secondary-foreground">
+                      <div className="mb-1 font-medium">Синонимы для #{active.label}:</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {groupLabels.filter((l) => l !== active.label).map((l) => (
+                          <span key={l} className="rounded-full bg-background px-2 py-0.5">
+                            #{l}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             ) : null}
           </div>
