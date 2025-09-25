@@ -1150,16 +1150,18 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 </span>
               ) : null}
             </pre>
-            {/* Кнопка с иконкой в правом верхнем углу инпута */}
-            <div className="absolute right-2 top-2 z-10">
-              <button
-                type="button"
-                aria-label="Magic"
-                className="text-muted-foreground bg-muted/40 hover:bg-muted/70 rounded-full h-6 w-6 inline-flex items-center justify-center opacity-70 hover:opacity-100 transition"
-              >
-                <FaMagic className="h-3 w-3" />
-              </button>
-            </div>
+            {/* Кнопка с иконкой в правом верхнем углу инпута (показывать только если есть текст) */}
+            {inputValue.trim() ? (
+              <div className="absolute right-2 top-2 z-10">
+                <button
+                  type="button"
+                  aria-label="Magic"
+                  className="group bg-muted border border-border text-muted-foreground rounded-full h-6 w-6 inline-flex items-center justify-center transition hover:bg-muted/80"
+                >
+                  <FaMagic className="h-3 w-3 opacity-70 group-hover:opacity-100" />
+                </button>
+              </div>
+            ) : null}
         </div>
         {/* Под полем: подсказки #тегов */}
         {(tagOpen && tagSuggestions.length > 0) ? (
