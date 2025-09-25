@@ -44,7 +44,7 @@ export const ProjectFloatingChat = ({ projectId }: ProjectFloatingChatProps) => 
       } catch {}
     }
     if (typeof window !== 'undefined') {
-      setSize({ w: 360, h: clampHeight(Math.round(window.innerHeight * 0.96)) })
+      setSize({ w: 360, h: clampHeight(Math.round(window.innerHeight - 16)) })
     }
   }, [projectId])
 

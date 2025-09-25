@@ -6,8 +6,9 @@ import { ThemeSwitcher } from './theme-switcher';
 
 export const ControlsInner = () => (
   <FlowControls
+    position="bottom-right"
     orientation="horizontal"
-    className="flex-col! rounded-full border bg-card/90 p-1 shadow-none! drop-shadow-xs backdrop-blur-sm sm:flex-row!"
+    className="mr-20 flex-col! rounded-full border bg-card/90 p-1 shadow-none! drop-shadow-xs backdrop-blur-sm sm:flex-row!"
     showInteractive={false}
   >
     <ThemeSwitcher />
