@@ -6,6 +6,7 @@ import useSWR from "swr"
 import { DefaultChatTransport } from "ai"
 import { Copy as CopyIcon, RotateCcw, Pencil } from "lucide-react"
 import { RiAiGenerateText, RiImageCircleAiLine, RiMicAiLine, RiFilmAiLine } from "react-icons/ri"
+import { BsInputCursor } from "react-icons/bs"
 import { FaMagic } from "react-icons/fa"
 import { MdBookmarkBorder, MdOutlineBookmark } from "react-icons/md"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -1271,22 +1272,38 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   : 'text-muted-foreground hover:bg-muted/50') + ' rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'
               }
             >
-                    <RiAiGenerateText className="size-4" />
+                    <BsInputCursor className="size-4" />
             </AIInputButton>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
                   <p>{autocompleteEnabled ? 'Отключить автодополнение' : 'Включить автодополнение'}</p>
                 </TooltipContent>
               </Tooltip>
-              {/* Image toggle */}
+              {/* Extra text generation button (before voice) */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <AIInputButton
-                    aria-pressed={false}
+                  <Button
+                    type="button"
                     className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
+                    variant="ghost"
+                  >
+                    <RiAiGenerateText className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="z-[10000]">
+                  <p>Генерация текста</p>
+                </TooltipContent>
+              </Tooltip>
+              {/* Image button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
+                    variant="ghost"
                   >
                     <RiImageCircleAiLine className="size-4" />
-                  </AIInputButton>
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
                   <p>Генерация изображения</p>
@@ -1295,12 +1312,13 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               {/* Voice toggle */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <AIInputButton
-                    aria-pressed={false}
+                  <Button
+                    type="button"
                     className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
+                    variant="ghost"
                   >
                     <RiMicAiLine className="size-4" />
-                  </AIInputButton>
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
                   <p>Голосовой режим</p>
@@ -1309,12 +1327,13 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               {/* Video toggle */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <AIInputButton
-                    aria-pressed={false}
+                  <Button
+                    type="button"
                     className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
+                    variant="ghost"
                   >
                     <RiFilmAiLine className="size-4" />
-                  </AIInputButton>
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
                   <p>Видео</p>
