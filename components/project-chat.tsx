@@ -1291,7 +1291,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
-                  <p>Генерация текста</p>
+                  <p>Шаблон для поста</p>
                 </TooltipContent>
               </Tooltip>
               {/* Image button */}
@@ -1306,7 +1306,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
-                  <p>Генерация изображения</p>
+                  <p>Шаблон генерации изображения</p>
                 </TooltipContent>
               </Tooltip>
               {/* Voice toggle */}
@@ -1321,7 +1321,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
-                  <p>Голосовой режим</p>
+                  <p>Шаблон генерации аудио</p>
                 </TooltipContent>
               </Tooltip>
               {/* Video toggle */}
@@ -1336,7 +1336,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
-                  <p>Видео</p>
+                  <p>Шаблон генерации видео</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
