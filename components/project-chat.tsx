@@ -6,8 +6,7 @@ import useSWR from "swr"
 import { DefaultChatTransport } from "ai"
 import { Copy as CopyIcon, RotateCcw, Pencil } from "lucide-react"
 import { RiAiGenerateText, RiImageCircleAiLine, RiMicAiLine, RiFilmAiLine } from "react-icons/ri"
-import { TbTextWrap } from "react-icons/tb";
-import { FaMagic } from "react-icons/fa"
+import { TbTextWrap } from "react-icons/tb"
 import { MdBookmarkBorder, MdOutlineBookmark } from "react-icons/md"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -52,6 +51,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Greeting } from "@/components/greeting"
+import { toast } from "sonner"
+import { getTemplateText, TemplateModality } from "@/components/template-generate"
+import { FaMagic } from "react-icons/fa"
 
 type ProjectChatProps = {
   projectId: string
@@ -75,6 +77,25 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   })
 
   const [inputValue, setInputValue] = useState("")
+
+  const insertTemplate = (modality: TemplateModality) => {
+    try {
+      const tpl = getTemplateText(modality)
+      const needNewline = inputValue.length > 0 && !/\n$/.test(inputValue)
+      const next = (needNewline ? inputValue + "\n" : inputValue) + tpl
+      setInputValue(next)
+      // Move caret to end after inserting
+      setTimeout(() => {
+        try {
+          const el = textareaRef.current
+          if (el) {
+            const pos = next.length
+            el.setSelectionRange(pos, pos)
+          }
+        } catch {}
+      }, 0)
+    } catch {}
+  }
 
   // Inline подсказки при наборе (автодополнение) через /api/completion
   const {
@@ -175,13 +196,14 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
         setMessages(
           rows.map((r) => ({ id: r.id, role: r.role, parts: [{ type: 'text', text: r.content }] }))
         )
+        hydratedRef.current = true
       } catch {}
     }
     load()
     return () => {
       cancelled = true
     }
-  }, [projectId, setMessages, messages])
+  }, [projectId, setMessages])
 
   // Listen for external clear events to reset without page reload
   useEffect(() => {
@@ -229,9 +251,15 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const [isBranching, setIsBranching] = useState(false)
   const [savedPromptIds, setSavedPromptIds] = useState<Record<string, boolean>>({})
 
+  // Magic correction modal state
+  const [magicOpen, setMagicOpen] = useState(false)
+  const [magicNotes, setMagicNotes] = useState("")
+  const [magicLoading, setMagicLoading] = useState(false)
+
   // Hashtag suggestions state
   const [tagQuery, setTagQuery] = useState<string>("")
   const [tagSuggestions, setTagSuggestions] = useState<Array<{ label: string; value: string }>>([])
+  const [tagOptionsAll, setTagOptionsAll] = useState<Array<{ label: string; value: string; baseLabel?: string }>>([])
   const [tagOpen, setTagOpen] = useState(false)
   const [tagIdx, setTagIdx] = useState(0)
   const tagTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -383,15 +411,28 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
 
   const resolveCanonicalLabel = (
     pickValue: string | undefined,
-    options: Array<{ label: string; value: string }>
+    options: Array<{ label: string; value: string; baseLabel?: string }>
   ): string | null => {
     if (!pickValue) return null
-    const group = options.filter((o) => o.value === pickValue).map((o) => o.label)
-    if (group.length === 0) return null
-    // 1) предпочтем вариант без пробелов
+    const groupOptions = options.filter((o) => o.value === pickValue)
+    if (groupOptions.length === 0) return null
+    // 0) Если бэкенд прислал базовый лейбл — используем его как канон (обычно en)
+    const base = groupOptions.find((o) => typeof o.baseLabel === 'string' && o.baseLabel.trim().length > 0)?.baseLabel
+    if (base) return base
+    const group = groupOptions.map((o) => o.label)
+    // 1) Англ. ASCII вариант (включая пробелы) — самый короткий
+    const englishPreferred = group
+      .filter((l) => /^[A-Za-z0-9 _-]+$/.test(l))
+      .slice()
+      .sort((a, b) => a.length - b.length)[0]
+    if (englishPreferred) {
+      const noSpaceAlt = group.find((l) => l.toLowerCase() === englishPreferred.toLowerCase().replace(/\s+/g, ''))
+      return noSpaceAlt ?? englishPreferred
+    }
+    // 2) Без пробелов
     const noSpace = group.find((l) => !/\s/.test(l))
     if (noSpace) return noSpace
-    // 2) иначе возьмем самый короткий как канонический
+    // 3) Самый короткий
     return group.slice().sort((a, b) => a.length - b.length)[0]
   }
 
@@ -447,6 +488,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     if (disabled) {
       setTagOpen(false)
       setTagSuggestions([])
+      // reset full options as well
+      try { (setTagOptionsAll as any)([]) } catch {}
       setTagIdx(0)
       setTagQuery('')
       return
@@ -463,12 +506,17 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
           if (!res.ok) {
             setTagOpen(false)
             setTagSuggestions([])
+            try { (setTagOptionsAll as any)([]) } catch {}
             setTagIdx(0)
             setTagQuery('')
             return
           }
-          const data = await res.json() as { options?: Array<{ label: string; value: string }> }
-          const opts = Array.isArray(data?.options) ? data.options.slice(0, 8) : []
+          const data = await res.json() as { options?: Array<{ label: string; value: string; baseLabel?: string }> }
+          const all = Array.isArray(data?.options) ? data.options : []
+          // keep full list for synonyms panel
+          try { (setTagOptionsAll as any)(all) } catch {}
+          // limit menu items for navigation/keyboard
+          const opts = all.slice(0, 8)
           setTagSuggestions(opts)
           const activeIdx = Math.max(0, opts.findIndex((o) => o.label === q))
           setTagIdx(activeIdx)
@@ -477,6 +525,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
         } catch {
           setTagOpen(false)
           setTagSuggestions([])
+          try { (setTagOptionsAll as any)([]) } catch {}
           setTagIdx(0)
           setTagQuery('')
         }
@@ -484,6 +533,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     } else {
       setTagOpen(false)
       setTagSuggestions([])
+      try { (setTagOptionsAll as any)([]) } catch {}
       setTagIdx(0)
       setTagQuery('')
     }
@@ -622,47 +672,26 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     s.paddingRight = cs.paddingRight
   }, [textareaRef.current, overlayRef.current])
 
-  // Авто-ресайз textarea и контейнера под число строк
+  // Синхронизируем высоту оверлея и контейнера с фактической высотой textarea
   useEffect(() => {
     const ta = textareaRef.current
     const cont = inputContainerRef.current
     const ov = overlayRef.current
     if (!ta) return
-    const resize = () => {
-      // вычисляем max высоту = 10 строк (+ вертикальные паддинги)
-      const cs = getComputedStyle(ta)
-      const parsePx = (v: string) => (v.endsWith('px') ? parseFloat(v) : Number.NaN)
-      const lineH = parsePx(cs.lineHeight) || parsePx(cs.fontSize) * 1.2 || 20
-      const padT = parsePx(cs.paddingTop) || 0
-      const padB = parsePx(cs.paddingBottom) || 0
-      const maxH = Math.round(lineH * 30 + padT + padB)
-
-      // контентная высота = максимум из текста и оверлея
-      const prevScrollTop = ta.scrollTop
-      ta.style.height = 'auto'
-      if (ov) {
-        ov.style.height = 'auto'
-      }
-      const taH = ta.scrollHeight
-      const ovH = ov ? ov.scrollHeight : 0
-      const contentH = Math.max(taH, ovH)
-      const clampedH = Math.min(contentH, maxH)
-
-      ta.style.height = `${clampedH}px`
-      ta.style.overflowY = contentH > maxH ? 'auto' : 'hidden'
-      // восстановим прежнюю прокрутку, чтобы не прыгало вверх
-      try { ta.scrollTop = prevScrollTop } catch {}
-      if (ov) {
-        ov.style.height = `${clampedH}px`
-      }
-      if (cont) {
-        cont.style.height = `${clampedH}px`
-        // При открытой панели подсказок разрешаем overflow, чтобы дропдаун был виден
-        cont.style.overflowY = tagOpen ? 'visible' as any : 'hidden'
-      }
+    const sync = () => {
+      try {
+        const h = (ta.style.height && ta.style.height.endsWith('px'))
+          ? parseFloat(ta.style.height)
+          : ta.scrollHeight
+        if (ov) ov.style.height = `${h}px`
+        if (cont) {
+          cont.style.height = `${h}px`
+          cont.style.overflowY = tagOpen ? 'visible' as any : 'hidden'
+        }
+      } catch {}
     }
-    resize()
-    const onWin = () => resize()
+    sync()
+    const onWin = () => sync()
     window.addEventListener('resize', onWin)
     return () => window.removeEventListener('resize', onWin)
   }, [inputValue, displayRemainder, tagOpen])
@@ -944,6 +973,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
         <AIInputTextarea
             ref={textareaRef as any}
           value={inputValue}
+            minRows={3}
+            maxRows={20}
             onChange={(e) => {
               const val = e.target.value
               setInputValue(val)
@@ -972,50 +1003,27 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 lastPromptRef.current = ""
                 try { stopSuggestion() } catch {}
                 setSuggestTimerRunning(false)
-                // При пустом поле — сбрасываем высоту до минимума
-                if (t.length === 0) {
-                  try {
-                    const el = textareaRef.current
-                    const ov = overlayRef.current
-                    if (el) {
-                      el.style.height = 'auto'
-                      const cs = getComputedStyle(el)
-                      const parsePx = (v: string) => (v.endsWith('px') ? parseFloat(v) : Number.NaN)
-                      const lineH = parsePx(cs.lineHeight) || parsePx(cs.fontSize) * 1.2 || 20
-                      const padT = parsePx(cs.paddingTop) || 0
-                      const padB = parsePx(cs.paddingBottom) || 0
-                      const maxH = Math.round(lineH * 30 + padT + padB)
-                      const taH = el.scrollHeight
-                      const ovH = ov ? (ov.style.height = 'auto', ov.scrollHeight) : 0
-                      const contentH = Math.max(taH, ovH)
-                      const clampedH = Math.min(contentH, maxH)
-                      el.style.height = `${clampedH}px`
-                      el.style.overflowY = 'hidden'
-                      if (ov) ov.style.height = `${clampedH}px`
-                      if (inputContainerRef.current) {
-                        inputContainerRef.current.style.height = `${clampedH}px`
-                        inputContainerRef.current.style.overflowY = 'hidden'
-                      }
-                    }
-                  } catch {}
-                }
               }
             }}
             onClick={(e: React.MouseEvent<HTMLTextAreaElement>) => {
-              const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+              const el = e.currentTarget as HTMLTextAreaElement | null
+              const caret = (el && typeof el.selectionStart === 'number') ? el.selectionStart : inputValue.length
               recomputeTagSuggestions(inputValue, caret)
             }}
             onMouseUp={(e: React.MouseEvent<HTMLTextAreaElement>) => {
-              const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+              const el = e.currentTarget as HTMLTextAreaElement | null
+              const caret = (el && typeof el.selectionStart === 'number') ? el.selectionStart : inputValue.length
               recomputeTagSuggestions(inputValue, caret)
             }}
             onSelect={(e: React.SyntheticEvent<HTMLTextAreaElement>) => {
-              const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+              const el = e.currentTarget as HTMLTextAreaElement | null
+              const caret = (el && typeof el.selectionStart === 'number') ? el.selectionStart : inputValue.length
               recomputeTagSuggestions(inputValue, caret)
             }}
             onFocus={(e: React.FocusEvent<HTMLTextAreaElement>) => {
               setTimeout(() => {
-                const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+                const el = e.currentTarget as HTMLTextAreaElement | null
+                const caret = (el && typeof el.selectionStart === 'number') ? el.selectionStart : inputValue.length
                 recomputeTagSuggestions(inputValue, caret)
               }, 0)
             }}
@@ -1024,23 +1032,6 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               if (tagOpen && tagSuggestions.length > 0) {
                 if (e.key === 'ArrowDown') { e.preventDefault(); setTagIdx((i) => Math.min(i + 1, tagSuggestions.length - 1)); return }
                 if (e.key === 'ArrowUp') { e.preventDefault(); setTagIdx((i) => Math.max(i - 1, 0)); return }
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  const pick = tagSuggestions[tagIdx]
-                  if (pick) {
-                    // Всегда используем канонический лейбл без пробелов
-                    const canonical = resolveCanonicalLabel(pick.value, tagSuggestions) || pick.label
-                    // Вставляем только #label (без синонимов). Синонимы выбираются отдельно внизу.
-                    const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
-                    setCaretIndex(caret)
-                    insertTagAtSelection(canonical, pick.value, undefined, true)
-                    setTagOpen(false)
-                    setTagSuggestions([])
-                    setTagIdx(0)
-                    setTagQuery('')
-                    return
-                  }
-                }
                 if (e.key === 'Escape') { setTagOpen(false); return }
               }
               if (e.key === 'Tab') {
@@ -1060,28 +1051,6 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                       if (el) {
                         const pos = accept.length
                         el.setSelectionRange(pos, pos)
-                        // Обновим высоту после вставки (учитываем оверлей)
-                        const ov = overlayRef.current
-                        const cs = getComputedStyle(el)
-                        const parsePx = (v: string) => (v.endsWith('px') ? parseFloat(v) : Number.NaN)
-                        const lineH = parsePx(cs.lineHeight) || parsePx(cs.fontSize) * 1.2 || 20
-                        const padT = parsePx(cs.paddingTop) || 0
-                        const padB = parsePx(cs.paddingBottom) || 0
-                        const maxH = Math.round(lineH * 30 + padT + padB)
-                        el.style.height = 'auto'
-                        const taH = el.scrollHeight
-                        const ovH = ov ? ov.scrollHeight : 0
-                        const contentH = Math.max(taH, ovH)
-                        const clampedH = Math.min(contentH, maxH)
-                        el.style.height = `${clampedH}px`
-                        el.style.overflowY = contentH > maxH ? 'auto' : 'hidden'
-                        if (ov) ov.style.height = `${clampedH}px`
-                        if (inputContainerRef.current) {
-                          inputContainerRef.current.style.height = `${clampedH}px`
-                          inputContainerRef.current.style.overflowY = 'hidden'
-                        }
-                        // Прокрутка инпута вниз после применения completion
-                        try { el.scrollTop = el.scrollHeight } catch {}
                       }
                     } catch {}
                   }, 0)
@@ -1106,32 +1075,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 setSuggestTimerRunning(false)
                 if (suggestTimerRef.current) { clearTimeout(suggestTimerRef.current); suggestTimerRef.current = null }
                 // Обновим высоту после очистки
-                setTimeout(() => {
-                  try {
-                    const el = textareaRef.current
-                    if (el) {
-                      el.style.height = 'auto'
-                      const cs = getComputedStyle(el)
-                      const parsePx = (v: string) => (v.endsWith('px') ? parseFloat(v) : Number.NaN)
-                      const lineH = parsePx(cs.lineHeight) || parsePx(cs.fontSize) * 1.2 || 20
-                      const padT = parsePx(cs.paddingTop) || 0
-                      const padB = parsePx(cs.paddingBottom) || 0
-                      const maxH = Math.round(lineH * 30 + padT + padB)
-                      const ov = overlayRef.current
-                      const taH = el.scrollHeight
-                      const ovH = ov ? ov.scrollHeight : 0
-                      const contentH = Math.max(taH, ovH)
-                      const clampedH = Math.min(contentH, maxH)
-                      el.style.height = `${clampedH}px`
-                      el.style.overflowY = 'hidden'
-                      if (ov) ov.style.height = `${clampedH}px`
-                      if (inputContainerRef.current) {
-                        inputContainerRef.current.style.height = `${clampedH}px`
-                        inputContainerRef.current.style.overflowY = 'hidden'
-                      }
-                    }
-                  } catch {}
-                }, 0)
+                // высота будет синхронизирована эффектом и авто-ресайзом AIInputTextarea
               }
             }}
             onKeyUp={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -1141,7 +1085,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 'Home', 'End', 'PageUp', 'PageDown'
               ])
               if (navKeys.has(e.key)) {
-                const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+                const el = e.currentTarget as HTMLTextAreaElement | null
+                const caret = (el && typeof el.selectionStart === 'number') ? el.selectionStart : inputValue.length
                 recomputeTagSuggestions(inputValue, caret)
               }
             }}
@@ -1201,8 +1146,13 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   type="button"
                   aria-label="Magic"
                   className="group bg-muted border border-border text-muted-foreground rounded-full h-6 w-6 inline-flex items-center justify-center transition hover:bg-muted/80"
+                  onClick={() => setMagicOpen(true)}
                 >
-                  <FaMagic className="h-3 w-3 opacity-70 group-hover:opacity-100" />
+                  {magicLoading ? (
+                    <span className="h-3 w-3 inline-block animate-spin border-2 border-current border-t-transparent rounded-full"></span>
+                  ) : (
+                    <FaMagic className="h-3 w-3 opacity-70 group-hover:opacity-100" />
+                  )}
                 </button>
               </div>
             ) : null}
@@ -1214,15 +1164,19 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 {(() => {
                   const active = tagSuggestions[tagIdx]
                   if (!active) return null
-                  const groupLabels = Array.from(new Set(tagSuggestions.filter((o) => o.value === active.value).map((o) => o.label)))
+                  const groupLabels = Array.from(new Set(tagOptionsAll.filter((o) => o.value === active.value).map((o) => o.label)))
                   if (groupLabels.length <= 1) return null
-                  const canonicalLabel = resolveCanonicalLabel(active.value, tagSuggestions) || active.label
-                  const chosen = Array.from(selectedSynonymsByLabel[canonicalLabel] ?? [])
+                  const baseKey = (() => {
+                    const inAll = tagOptionsAll.find((o) => o.value === active.value && typeof o.baseLabel === 'string')
+                    return (inAll?.baseLabel || resolveCanonicalLabel(active.value, tagOptionsAll) || active.label)
+                  })()
+                  const headingLabel = baseKey
+                  const chosen = Array.from(selectedSynonymsByLabel[baseKey] ?? [])
                   return (
                     <div className=" text-xs text-foreground">
-                      <div className="font-medium">#{canonicalLabel}:</div>
+                      <div className="font-medium">#{headingLabel}:</div>
                       <div className="h-24 overflow-x-auto overflow-y-hidden grid grid-flow-col auto-cols-max grid-rows-3 content-start items-start gap-1.5 pr-2">
-                        {groupLabels.filter((l) => l !== canonicalLabel).map((l) => {
+                        {groupLabels.filter((l) => l !== headingLabel).map((l) => {
                           const picked = chosen.includes(l)
                           return (
                             <button
@@ -1234,7 +1188,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                                   ? 'bg-primary text-primary-foreground border-primary'
                                   : 'bg-background text-secondary-foreground hover:bg-secondary/80')
                               }
-                              onClick={() => toggleSynonym(canonicalLabel, l)}
+                              onClick={() => toggleSynonym(baseKey, l)}
                             >
                               <span className="font-medium">{l}</span>
                             </button>
@@ -1286,6 +1240,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                     type="button"
                     className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
                     variant="ghost"
+                    onClick={() => insertTemplate('post')}
                   >
                     <RiAiGenerateText className="size-4" />
                   </Button>
@@ -1301,6 +1256,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                     type="button"
                     className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
                     variant="ghost"
+                    onClick={() => insertTemplate('image')}
                   >
                     <RiImageCircleAiLine className="size-4" />
                   </Button>
@@ -1316,6 +1272,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                     type="button"
                     className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
                     variant="ghost"
+                    onClick={() => insertTemplate('audio')}
                   >
                     <RiMicAiLine className="size-4" />
                   </Button>
@@ -1331,6 +1288,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                     type="button"
                     className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
                     variant="ghost"
+                    onClick={() => insertTemplate('video')}
                   >
                     <RiFilmAiLine className="size-4" />
                   </Button>
@@ -1346,6 +1304,63 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
           </div>
         </AIInputToolbar>
       </AIInput>
+
+      {/* Magic correction modal */}
+      <Dialog open={magicOpen} onOpenChange={(v) => { if (!magicLoading) setMagicOpen(v) }}>
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <DialogTitle>Что скорректировать?</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 py-1">
+            <Textarea
+              value={magicNotes}
+              onChange={(e) => setMagicNotes(e.target.value)}
+              placeholder="Опишите, что нужно исправить: стиль, тон, длина, ошибки и т.д."
+              className="min-h-[120px]"
+              disabled={magicLoading}
+            />
+          </div>
+          <DialogFooter>
+            <Button size="sm" variant="outline" onClick={() => setMagicOpen(false)} disabled={magicLoading}>Отмена</Button>
+            <Button size="sm" onClick={async () => {
+              const main = inputValue.trim()
+              if (!main) { setMagicOpen(false); return }
+              setMagicLoading(true)
+              try {
+                const payload = [
+                  'TEXT:',
+                  main,
+                  magicNotes.trim() ? '\nINSTRUCTIONS:\n' + magicNotes.trim() : ''
+                ].join('\n')
+                const res = await fetch('/api/correct', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ prompt: payload }),
+                })
+                if (!res.ok) throw new Error('correct failed')
+                const out = await res.text()
+                setInputValue(out)
+                setMagicOpen(false)
+                setMagicNotes('')
+                toast.success('Текст скорректирован', { duration: 2500 })
+              } catch {
+                toast.error('Не удалось скорректировать текст', { duration: 3000 })
+              } finally {
+                setMagicLoading(false)
+              }
+            }} disabled={magicLoading}>
+              <span className="inline-flex items-center gap-2">
+                {magicLoading ? (
+                  <span className="h-2 w-2 inline-block animate-spin border-2 border-current border-t-transparent rounded-full"></span>
+                ) : (
+                  <FaMagic className="h-2 w-2" />
+                )}
+                <span>Отправить</span>
+              </span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

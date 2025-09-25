@@ -11,7 +11,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Loader2Icon, SendIcon, SquareIcon, XIcon } from 'lucide-react';
-import { Children, useCallback, useEffect, useRef } from 'react';
+import { Children, useCallback, useEffect, useRef, forwardRef } from 'react';
 import type {
   ComponentProps,
   HTMLAttributes,
@@ -88,19 +88,45 @@ export const AIInput = ({ className, ...props }: AIInputProps) => (
 export type AIInputTextareaProps = ComponentProps<typeof Textarea> & {
   minHeight?: number;
   maxHeight?: number;
+  minRows?: number;
+  maxRows?: number;
 };
 
-export const AIInputTextarea = ({
+export const AIInputTextarea = forwardRef<HTMLTextAreaElement, AIInputTextareaProps>(({ 
   onChange,
   className,
   placeholder = 'What would you like to know?',
-  minHeight = 48,
-  maxHeight = 164,
+  minHeight,
+  maxHeight,
+  minRows = 3,
+  maxRows = 20,
   ...props
-}: AIInputTextareaProps) => {
+}: AIInputTextareaProps, forwardedRef) => {
+  // Compute pixel heights from rows once we know computed styles
+  const internalRef = useRef<HTMLTextAreaElement | null>(null);
+  const computeHeights = useCallback((): { minPx: number; maxPx: number } => {
+    const el = internalRef.current;
+    let line = 16;
+    let padT = 0;
+    let padB = 0;
+    if (el) {
+      const cs = getComputedStyle(el);
+      const parsePx = (v: string): number => (v.endsWith('px') ? parseFloat(v) : Number.NaN);
+      const fontSize = parsePx(cs.fontSize) || 16;
+      const lineHeight = cs.lineHeight === 'normal' ? fontSize * 1.3 : parsePx(cs.lineHeight) || fontSize * 1.3;
+      line = lineHeight;
+      padT = parsePx(cs.paddingTop) || 0;
+      padB = parsePx(cs.paddingBottom) || 0;
+    }
+    const minPx = (minHeight ?? Math.round(line * minRows + padT + padB));
+    const maxPx = (maxHeight ?? Math.round(line * maxRows + padT + padB));
+    return { minPx, maxPx };
+  }, [minHeight, maxHeight, minRows, maxRows]);
+
+  const heights = computeHeights();
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
-    minHeight,
-    maxHeight,
+    minHeight: heights.minPx,
+    maxHeight: heights.maxPx,
   });
 
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
@@ -113,11 +139,26 @@ export const AIInputTextarea = ({
     }
   };
 
+  // Recalculate height when controlled value changes programmatically
+  useEffect(() => {
+    adjustHeight();
+  }, [props.value, heights.minPx, heights.maxPx, adjustHeight]);
+
   return (
     <Textarea
       name="message"
       placeholder={placeholder}
-      ref={textareaRef}
+      ref={(el: HTMLTextAreaElement | null) => {
+        // attach to internal ref for auto-resize
+        (textareaRef as any).current = el;
+        internalRef.current = el;
+        // forward to parent if provided
+        if (typeof forwardedRef === 'function') {
+          forwardedRef(el);
+        } else if (forwardedRef && typeof forwardedRef === 'object') {
+          (forwardedRef as any).current = el;
+        }
+      }}
       className={cn(
         'w-full resize-none rounded-none border-none p-3 shadow-none outline-none ring-0',
         'bg-transparent dark:bg-transparent',
@@ -132,7 +173,7 @@ export const AIInputTextarea = ({
       {...props}
     />
   );
-};
+});
 
 export type AIInputToolbarProps = HTMLAttributes<HTMLDivElement>;
 
