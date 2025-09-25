@@ -376,6 +376,20 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     }, 0)
   }
 
+  const resolveCanonicalLabel = (
+    pickValue: string | undefined,
+    options: Array<{ label: string; value: string }>
+  ): string | null => {
+    if (!pickValue) return null
+    const group = options.filter((o) => o.value === pickValue).map((o) => o.label)
+    if (group.length === 0) return null
+    // 1) предпочтем вариант без пробелов
+    const noSpace = group.find((l) => !/\s/.test(l))
+    if (noSpace) return noSpace
+    // 2) иначе возьмем самый короткий как канонический
+    return group.slice().sort((a, b) => a.length - b.length)[0]
+  }
+
   const toggleSynonym = (label: string, synonym: string) => {
     setSelectedSynonymsByLabel((prev) => {
       const next = { ...prev }
@@ -971,23 +985,18 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 if (e.key === 'ArrowUp') { e.preventDefault(); setTagIdx((i) => Math.max(i - 1, 0)); return }
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
-                  const ht = findHashtagAt(inputValue, caret)
                   const pick = tagSuggestions[tagIdx]
-                  if (ht && pick) {
-                    // Вставляем отформатированный тег: #label
-                    const formatted = `#${pick.label}`
-                    const next = inputValue.slice(0, ht.start) + formatted + inputValue.slice(ht.end)
-                    setInputValue(next)
+                  if (pick) {
+                    // Всегда используем канонический лейбл без пробелов
+                    const canonical = resolveCanonicalLabel(pick.value, tagSuggestions) || pick.label
+                    // Вставляем только #label (без синонимов). Синонимы выбираются отдельно внизу.
+                    const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+                    setCaretIndex(caret)
+                    insertTagAtSelection(canonical, pick.value, undefined, true)
                     setTagOpen(false)
                     setTagSuggestions([])
                     setTagIdx(0)
                     setTagQuery('')
-                    // Переместим курсор в конец вставленного токена
-                    setTimeout(() => {
-                      const el = textareaRef.current
-                      try { el?.setSelectionRange(ht.start + formatted.length, ht.start + formatted.length) } catch {}
-                    }, 0)
                     return
                   }
                 }
