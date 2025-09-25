@@ -113,7 +113,7 @@ export const Menu = () => {
           )}
           <DropdownMenuItem asChild>
             <Link href="/pricing" className="flex items-center justify-between">
-              <span>Обновить</span>
+              <span>Оплатить</span>
               <ArrowUpRight size={16} className="text-muted-foreground" />
             </Link>
           </DropdownMenuItem>
