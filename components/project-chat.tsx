@@ -95,6 +95,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const suggestTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastPromptRef = useRef<string>("")
   const [autocompleteEnabled, setAutocompleteEnabled] = useState(false)
+  const [suggestTimerRunning, setSuggestTimerRunning] = useState(false)
 
   // If autocomplete toggles ON while there is already text, kick off suggestion immediately
   useEffect(() => {
@@ -212,6 +213,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const remainderStartsWithPunctOrSpace = remainder ? /^[\s.,;:!?)/\]}]/.test(remainder) : false
   const needLeadingSpace = Boolean(remainder && endsWithWordChar && noTrailingSpace && !remainderStartsWithPunctOrSpace)
   const displayRemainder = needLeadingSpace ? ` ${remainder}` : remainder
+  const showTimerDots = Boolean(autocompleteEnabled && !disabled && suggestTimerRunning && trimmed.length >= 3)
+  const showRemainder = Boolean(showGhost && displayRemainder)
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const overlayRef = useRef<HTMLPreElement | null>(null)
@@ -686,6 +689,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   useEffect(() => {
     return () => {
       if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current)
+      setSuggestTimerRunning(false)
     }
   }, [])
 
@@ -927,6 +931,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
           // Останавливаем текущую подсказку
           try { stopSuggestion() } catch {}
           setSuggestion("")
+          setSuggestTimerRunning(false)
+          if (suggestTimerRef.current) { clearTimeout(suggestTimerRef.current); suggestTimerRef.current = null }
         }}
         className="mt-2 rounded-b-3xl rounded-t-none border shadow-sm"
       >
@@ -942,10 +948,12 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               recomputeTagSuggestions(val, caret)
               const t = val.trim()
               // Дебаунсим запрос к /api/completion и не дублируем одинаковый промпт
-              if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current)
+              if (suggestTimerRef.current) { clearTimeout(suggestTimerRef.current); suggestTimerRef.current = null }
               const canSuggest = t.length >= 3 && !disabled && !loading && autocompleteEnabled
               if (canSuggest) {
+                setSuggestTimerRunning(true)
                 suggestTimerRef.current = setTimeout(async () => {
+                  setSuggestTimerRunning(false)
                   // Запускаем, даже если текст не изменился, но курсор менялся/скроллили —
                   // перезапустим стрим при отсутствии активного стрима
                   if (lastPromptRef.current === t && suggestionTrimmed) return
@@ -959,6 +967,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               } else {
                 lastPromptRef.current = ""
                 try { stopSuggestion() } catch {}
+                setSuggestTimerRunning(false)
               }
             }}
             onClick={(e: React.MouseEvent<HTMLTextAreaElement>) => {
@@ -1011,6 +1020,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   setInputValue(accept)
                   try { stopSuggestion() } catch {}
                   lastPromptRef.current = accept.trim()
+                  setSuggestTimerRunning(false)
+                  if (suggestTimerRef.current) { clearTimeout(suggestTimerRef.current); suggestTimerRef.current = null }
                   // Снимаем выделение и ставим курсор в конец
                   setTimeout(() => {
                     try {
@@ -1061,6 +1072,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 setInputValue('')
                 setSuggestion('')
                 try { stopSuggestion() } catch {}
+                setSuggestTimerRunning(false)
+                if (suggestTimerRef.current) { clearTimeout(suggestTimerRef.current); suggestTimerRef.current = null }
                 // Обновим высоту после очистки
                 setTimeout(() => {
                   try {
@@ -1137,10 +1150,10 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 </span>
               ))
             })()}
-            {showGhost && (displayRemainder || completionTyping) ? (
+            {(showRemainder || showTimerDots) ? (
                 <span className="text-muted-foreground/60">
-                  {displayRemainder}
-                  {completionTyping ? (
+                  {showRemainder ? displayRemainder : null}
+                  {showTimerDots ? (
                     <span className="inline-flex items-center align-baseline ml-1 gap-0.5">
                       <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-200ms]"></span>
                       <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-100ms]"></span>
@@ -1212,9 +1225,10 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 setAutocompleteEnabled((prev) => {
                   const next = !prev
                   if (!next) {
-                    if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current)
+                    if (suggestTimerRef.current) { clearTimeout(suggestTimerRef.current); suggestTimerRef.current = null }
                     try { stopSuggestion() } catch {}
                     setSuggestion('')
+                    setSuggestTimerRunning(false)
                   }
                   return next
                 })
