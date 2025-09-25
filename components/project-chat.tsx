@@ -639,6 +639,9 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       // контентная высота = максимум из текста и оверлея
       const prevScrollTop = ta.scrollTop
       ta.style.height = 'auto'
+      if (ov) {
+        ov.style.height = 'auto'
+      }
       const taH = ta.scrollHeight
       const ovH = ov ? ov.scrollHeight : 0
       const contentH = Math.max(taH, ovH)
@@ -968,6 +971,33 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 lastPromptRef.current = ""
                 try { stopSuggestion() } catch {}
                 setSuggestTimerRunning(false)
+                // При пустом поле — сбрасываем высоту до минимума
+                if (t.length === 0) {
+                  try {
+                    const el = textareaRef.current
+                    const ov = overlayRef.current
+                    if (el) {
+                      el.style.height = 'auto'
+                      const cs = getComputedStyle(el)
+                      const parsePx = (v: string) => (v.endsWith('px') ? parseFloat(v) : Number.NaN)
+                      const lineH = parsePx(cs.lineHeight) || parsePx(cs.fontSize) * 1.2 || 20
+                      const padT = parsePx(cs.paddingTop) || 0
+                      const padB = parsePx(cs.paddingBottom) || 0
+                      const maxH = Math.round(lineH * 30 + padT + padB)
+                      const taH = el.scrollHeight
+                      const ovH = ov ? (ov.style.height = 'auto', ov.scrollHeight) : 0
+                      const contentH = Math.max(taH, ovH)
+                      const clampedH = Math.min(contentH, maxH)
+                      el.style.height = `${clampedH}px`
+                      el.style.overflowY = 'hidden'
+                      if (ov) ov.style.height = `${clampedH}px`
+                      if (inputContainerRef.current) {
+                        inputContainerRef.current.style.height = `${clampedH}px`
+                        inputContainerRef.current.style.overflowY = 'hidden'
+                      }
+                    }
+                  } catch {}
+                }
               }
             }}
             onClick={(e: React.MouseEvent<HTMLTextAreaElement>) => {
