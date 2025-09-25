@@ -1221,7 +1221,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   return (
                     <div className="p-2 text-xs text-foreground">
                       <div className="mb-1 font-medium">#{canonicalLabel}:</div>
-                      <div className="h-10 overflow-x-auto overflow-y-hidden whitespace-nowrap flex flex-nowrap items-center gap-1.5 pr-2">
+                      <div className="h-24 overflow-x-auto overflow-y-hidden grid grid-flow-col auto-cols-max grid-rows-3 content-start items-start gap-1.5 pr-2">
                         {groupLabels.filter((l) => l !== canonicalLabel).map((l) => {
                           const picked = chosen.includes(l)
                           return (
