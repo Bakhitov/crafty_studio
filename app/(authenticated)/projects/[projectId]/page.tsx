@@ -3,7 +3,6 @@ import { Controls } from '@/components/controls';
 import { Reasoning } from '@/components/reasoning';
 import { SaveIndicator } from '@/components/save-indicator';
 import { Toolbar } from '@/components/toolbar';
-import { TopLeft } from '@/components/top-left';
 import { TopRight } from '@/components/top-right';
 import { currentUserProfile } from '@/lib/auth';
 import { database } from '@/lib/database';
@@ -43,6 +42,11 @@ const Project = async ({ params }: ProjectProps) => {
     where: eq(projects.id, projectId),
   });
 
+  // Fetch all projects for selector next to toolbar
+  const allProjects = await database.query.projects.findMany({
+    where: eq(projects.userId, profile.id),
+  });
+
   if (!project) {
     notFound();
   }
@@ -58,13 +62,14 @@ const Project = async ({ params }: ProjectProps) => {
             }}
           >
             <Controls />
-            <Toolbar />
+            <Toolbar
+              projectId={project.id}
+              currentProject={project}
+              projects={allProjects}
+            />
             <SaveIndicator />
           </Canvas>
         </ProjectProvider>
-        <Suspense fallback={null}>
-          <TopLeft id={projectId} />
-        </Suspense>
         <Suspense fallback={null}>
           <TopRight id={projectId} />
         </Suspense>

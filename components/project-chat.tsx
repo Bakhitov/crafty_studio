@@ -6,7 +6,7 @@ import useSWR from "swr"
 import { DefaultChatTransport } from "ai"
 import { Copy as CopyIcon, RotateCcw, Pencil } from "lucide-react"
 import { RiAiGenerateText, RiImageCircleAiLine, RiMicAiLine, RiFilmAiLine } from "react-icons/ri"
-import { BsInputCursor } from "react-icons/bs"
+import { TbTextWrap } from "react-icons/tb";
 import { FaMagic } from "react-icons/fa"
 import { MdBookmarkBorder, MdOutlineBookmark } from "react-icons/md"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -1272,7 +1272,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   : 'text-muted-foreground hover:bg-muted/50') + ' rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'
               }
             >
-                    <BsInputCursor className="size-4" />
+                    <TbTextWrap className="size-4" />
             </AIInputButton>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
@@ -1291,7 +1291,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
-                  <p>Шаблон для поста</p>
+                  <p>Шаблон генерации поста</p>
                 </TooltipContent>
               </Tooltip>
               {/* Image button */}

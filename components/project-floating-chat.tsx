@@ -33,7 +33,7 @@ export const ProjectFloatingChat = ({ projectId }: ProjectFloatingChatProps) => 
     const clampHeight = (h: number) => {
       const top = 8 // top-2
       const bottom = 8 // небольшой нижний отступ
-      const maxH = Math.max(300, window.innerHeight - top - bottom)
+      const maxH = Math.max(1200, window.innerHeight - top - bottom)
       return Math.min(h, maxH)
     }
     if (raw) {
@@ -44,7 +44,7 @@ export const ProjectFloatingChat = ({ projectId }: ProjectFloatingChatProps) => 
       } catch {}
     }
     if (typeof window !== 'undefined') {
-      setSize({ w: 360, h: clampHeight(Math.round(window.innerHeight * 0.96)) })
+      setSize({ w: 360, h: clampHeight(Math.round(window.innerHeight - 16)) })
     }
   }, [projectId])
 
@@ -170,5 +170,3 @@ export const ProjectFloatingChat = ({ projectId }: ProjectFloatingChatProps) => 
     </>
   )
 }
-
-
