@@ -96,7 +96,7 @@ export const ToolbarInner = ({ projectId, currentProject, projects }: ToolbarPro
         {currentProject && <ProjectSettings data={currentProject} />}
       </div>
       {projects && currentProject && (
-        <div className="flex items-center rounded-full border bg-card/90 p-1">
+        <div className="flex items-center rounded-full bg-card/90 p-1">
           <ProjectSelector projects={projects} currentProject={currentProject.id} />
         </div>
       )}
