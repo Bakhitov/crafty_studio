@@ -16,6 +16,10 @@ import { download } from '@/lib/download';
 import { Dropzone, DropzoneContent, DropzoneEmptyState } from './ui/kibo-ui/dropzone';
 import { uploadFile } from '@/lib/upload';
 import { ImageZoom } from './ui/kibo-ui/image-zoom';
+import { ProjectFloatingChat } from '@/components/project-floating-chat';
+import { ProjectSettings } from '@/components/project-settings';
+import { ProjectSelector } from '@/components/project-selector';
+import type { projects as projectsTable } from '@/schema';
 import {
   VideoPlayer,
   VideoPlayerContent,
@@ -30,7 +34,13 @@ import {
 } from './ui/kibo-ui/video-player';
 
 
-export const ToolbarInner = () => {
+type ToolbarProps = {
+  projectId?: string;
+  currentProject?: typeof projectsTable.$inferSelect;
+  projects?: (typeof projectsTable.$inferSelect)[];
+};
+
+export const ToolbarInner = ({ projectId, currentProject, projects }: ToolbarProps) => {
   const { getViewport } = useReactFlow();
   const { addNode } = useNodeOperations();
   const [galleryOpenTab, setGalleryOpenTab] = useState<'images' | 'videos' | 'audios' | 'files' | null>(null);
@@ -59,28 +69,37 @@ export const ToolbarInner = () => {
 
   return (
     <Panel
-      position="bottom-center"
-      className="m-4 flex items-center rounded-full border bg-card/90 p-1 drop-shadow-xs backdrop-blur-sm"
+      position="top-center"
+      className="m-4 flex items-center gap-2 rounded-full border bg-card/90 p-1 drop-shadow-xs backdrop-blur-sm"
     >
-      <GalleryButton
-        openWithTab={galleryOpenTab}
-        onIntentConsumed={() => setGalleryOpenTab(null)}
-        onSelect={(file) => {
-          const mime = file.type || '';
-          const nodeType = mime.startsWith('image/')
-            ? 'image'
-            : mime.startsWith('audio/')
-              ? 'audio'
-              : mime.startsWith('video/')
-                ? 'video'
-                : 'file';
-          const data =
-            nodeType === 'file'
-              ? { content: { url: file.url, type: file.type, name: file.name }, updatedAt: new Date().toISOString() }
-              : { content: { url: file.url, type: file.type }, updatedAt: new Date().toISOString() };
-          handleAddNode(nodeType, { data });
-        }}
-      />
+      <div className="flex shrink-0 items-center gap-1">
+        <GalleryButton
+          openWithTab={galleryOpenTab}
+          onIntentConsumed={() => setGalleryOpenTab(null)}
+          onSelect={(file) => {
+            const mime = file.type || '';
+            const nodeType = mime.startsWith('image/')
+              ? 'image'
+              : mime.startsWith('audio/')
+                ? 'audio'
+                : mime.startsWith('video/')
+                  ? 'video'
+                  : 'file';
+            const data =
+              nodeType === 'file'
+                ? { content: { url: file.url, type: file.type, name: file.name }, updatedAt: new Date().toISOString() }
+                : { content: { url: file.url, type: file.type }, updatedAt: new Date().toISOString() };
+            handleAddNode(nodeType, { data });
+          }}
+        />
+        {projectId && <ProjectFloatingChat projectId={projectId} />}
+        {currentProject && <ProjectSettings data={currentProject} />}
+      </div>
+      {projects && currentProject && (
+        <div className="flex items-center rounded-full border bg-card/90 p-1">
+          <ProjectSelector projects={projects} currentProject={currentProject.id} />
+        </div>
+      )}
     </Panel>
   );
 };
