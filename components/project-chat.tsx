@@ -6,6 +6,7 @@ import useSWR from "swr"
 import { DefaultChatTransport } from "ai"
 import { Copy as CopyIcon, RotateCcw, Pencil } from "lucide-react"
 import { RiAiGenerateText, RiImageCircleAiLine, RiMicAiLine, RiFilmAiLine } from "react-icons/ri"
+import { FaMagic } from "react-icons/fa"
 import { MdBookmarkBorder, MdOutlineBookmark } from "react-icons/md"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -1149,6 +1150,16 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 </span>
               ) : null}
             </pre>
+            {/* Кнопка с иконкой в правом верхнем углу инпута */}
+            <div className="absolute right-2 top-2 z-10">
+              <button
+                type="button"
+                aria-label="Magic"
+                className="text-muted-foreground hover:bg-muted/60 rounded-full h-7 w-7 inline-flex items-center justify-center shadow-sm"
+              >
+                <FaMagic className="h-3.5 w-3.5" />
+              </button>
+            </div>
         </div>
         {/* Под полем: подсказки #тегов */}
         {(tagOpen && tagSuggestions.length > 0) ? (
