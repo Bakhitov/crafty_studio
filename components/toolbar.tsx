@@ -1,20 +1,18 @@
 'use client';
 
-import { nodeButtons } from '@/lib/node-buttons';
 import { useNodeOperations } from '@/providers/node-operations';
 import { Panel, useReactFlow } from '@xyflow/react';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import { XIcon, AudioWaveformIcon, VideoIcon, FileIcon, DownloadIcon, Trash2Icon, CheckIcon } from 'lucide-react';
+import { XIcon, FileIcon, DownloadIcon, Trash2Icon, CheckIcon } from 'lucide-react';
 import { deleteUserFile } from '@/app/actions/image/delete-file';
 import Image from 'next/image';
 import { listUserFiles, type UserFile } from '@/app/actions/image/list-files';
 import { createPortal } from 'react-dom';
 import { TbFolders } from "react-icons/tb";
 import { download } from '@/lib/download';
-import { Separator } from './ui/separator';
 import { Dropzone, DropzoneContent, DropzoneEmptyState } from './ui/kibo-ui/dropzone';
 import { uploadFile } from '@/lib/upload';
 import { ImageZoom } from './ui/kibo-ui/image-zoom';
@@ -64,29 +62,6 @@ export const ToolbarInner = () => {
       position="bottom-center"
       className="m-4 flex items-center rounded-full border bg-card/90 p-1 drop-shadow-xs backdrop-blur-sm"
     >
-      {nodeButtons.map((button) => (
-        <Tooltip key={button.id}>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              onClick={() => {
-                const id = button.id as string;
-                if (id === 'image') return setGalleryOpenTab('images');
-                if (id === 'video') return setGalleryOpenTab('videos');
-                if (id === 'audio') return setGalleryOpenTab('audios');
-                if (id === 'file') return setGalleryOpenTab('files');
-                return handleAddNode(id, (button as unknown as { data?: Record<string, unknown> }).data);
-              }}
-            >
-              <button.icon size={12} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{button.label}</TooltipContent>
-        </Tooltip>
-      ))}
-      <Separator orientation="vertical" className="mx-2 h-6 w-[2px] bg-foreground/20" />
       <GalleryButton
         openWithTab={galleryOpenTab}
         onIntentConsumed={() => setGalleryOpenTab(null)}
