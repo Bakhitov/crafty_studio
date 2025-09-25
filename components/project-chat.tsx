@@ -6,6 +6,8 @@ import useSWR from "swr"
 import { DefaultChatTransport } from "ai"
 import { Copy as CopyIcon, RotateCcw, Pencil } from "lucide-react"
 import { RiAiGenerateText, RiImageCircleAiLine, RiMicAiLine, RiFilmAiLine } from "react-icons/ri"
+import { BsInputCursor } from "react-icons/bs"
+import { FaMagic } from "react-icons/fa"
 import { MdBookmarkBorder, MdOutlineBookmark } from "react-icons/md"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -94,6 +96,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const suggestTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastPromptRef = useRef<string>("")
   const [autocompleteEnabled, setAutocompleteEnabled] = useState(false)
+  const [suggestTimerRunning, setSuggestTimerRunning] = useState(false)
 
   // If autocomplete toggles ON while there is already text, kick off suggestion immediately
   useEffect(() => {
@@ -211,6 +214,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const remainderStartsWithPunctOrSpace = remainder ? /^[\s.,;:!?)/\]}]/.test(remainder) : false
   const needLeadingSpace = Boolean(remainder && endsWithWordChar && noTrailingSpace && !remainderStartsWithPunctOrSpace)
   const displayRemainder = needLeadingSpace ? ` ${remainder}` : remainder
+  const showTimerDots = Boolean(autocompleteEnabled && !disabled && suggestTimerRunning && trimmed.length >= 3)
+  const showRemainder = Boolean(showGhost && displayRemainder)
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const overlayRef = useRef<HTMLPreElement | null>(null)
@@ -336,9 +341,9 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
 
   const applySynonymsToText = (label: string, synonyms: string[]) => {
     const formatted = `#${label}${synonyms.length ? ` (${synonyms.join(', ')})` : ''}`
-    // 1) Если курсор в теге этого label — заменяем его
+    // 1) Если курсор в теге — заменяем текущий токен целиком (независимо от исходного лейбла)
     const at = findHashtagAt(inputValue, caretIndex)
-    if (at && new RegExp(`^#${escapeForRegExp(label)}(\b|\s|$)`).test(at.token)) {
+    if (at) {
       const next = inputValue.slice(0, at.start) + formatted + inputValue.slice(at.end)
       setInputValue(next)
       setTimeout(() => {
@@ -374,6 +379,20 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       const pos = before.length + withSpace.length + formatted.length
       try { el?.setSelectionRange(pos, pos) } catch {}
     }, 0)
+  }
+
+  const resolveCanonicalLabel = (
+    pickValue: string | undefined,
+    options: Array<{ label: string; value: string }>
+  ): string | null => {
+    if (!pickValue) return null
+    const group = options.filter((o) => o.value === pickValue).map((o) => o.label)
+    if (group.length === 0) return null
+    // 1) предпочтем вариант без пробелов
+    const noSpace = group.find((l) => !/\s/.test(l))
+    if (noSpace) return noSpace
+    // 2) иначе возьмем самый короткий как канонический
+    return group.slice().sort((a, b) => a.length - b.length)[0]
   }
 
   const toggleSynonym = (label: string, synonym: string) => {
@@ -418,6 +437,56 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     const end = text.length
     const start = end - token.length
     return { start, end, token, query: m[2] ?? '' }
+  }
+
+  // Пересчитать подсказки по хэштегам исходя из текущей позиции каретки
+  const recomputeTagSuggestions = (text: string, caret: number) => {
+    setCaretIndex(caret)
+    if (tagTimerRef.current) clearTimeout(tagTimerRef.current)
+
+    if (disabled) {
+      setTagOpen(false)
+      setTagSuggestions([])
+      setTagIdx(0)
+      setTagQuery('')
+      return
+    }
+
+    const ht = findHashtagAt(text, caret)
+    const q = ht?.query ?? ''
+
+    if (ht && q.length >= 1) {
+      tagTimerRef.current = setTimeout(async () => {
+        try {
+          const lang = getUiLang()
+          const res = await fetch(`/api/tags?lang=${encodeURIComponent(lang)}&search=${encodeURIComponent(q)}`)
+          if (!res.ok) {
+            setTagOpen(false)
+            setTagSuggestions([])
+            setTagIdx(0)
+            setTagQuery('')
+            return
+          }
+          const data = await res.json() as { options?: Array<{ label: string; value: string }> }
+          const opts = Array.isArray(data?.options) ? data.options.slice(0, 8) : []
+          setTagSuggestions(opts)
+          const activeIdx = Math.max(0, opts.findIndex((o) => o.label === q))
+          setTagIdx(activeIdx)
+          setTagOpen(opts.length > 0)
+          setTagQuery(q)
+        } catch {
+          setTagOpen(false)
+          setTagSuggestions([])
+          setTagIdx(0)
+          setTagQuery('')
+        }
+      }, 200)
+    } else {
+      setTagOpen(false)
+      setTagSuggestions([])
+      setTagIdx(0)
+      setTagQuery('')
+    }
   }
 
   const getMessageText = (m: any): string => {
@@ -571,6 +640,9 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       // контентная высота = максимум из текста и оверлея
       const prevScrollTop = ta.scrollTop
       ta.style.height = 'auto'
+      if (ov) {
+        ov.style.height = 'auto'
+      }
       const taH = ta.scrollHeight
       const ovH = ov ? ov.scrollHeight : 0
       const contentH = Math.max(taH, ovH)
@@ -621,6 +693,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   useEffect(() => {
     return () => {
       if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current)
+      setSuggestTimerRunning(false)
     }
   }, [])
 
@@ -862,6 +935,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
           // Останавливаем текущую подсказку
           try { stopSuggestion() } catch {}
           setSuggestion("")
+          setSuggestTimerRunning(false)
+          if (suggestTimerRef.current) { clearTimeout(suggestTimerRef.current); suggestTimerRef.current = null }
         }}
         className="mt-2 rounded-b-3xl rounded-t-none border shadow-sm"
       >
@@ -872,51 +947,17 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
             onChange={(e) => {
               const val = e.target.value
               setInputValue(val)
-            // Hashtag suggestions debounce (по позиции курсора)
-            const caret = (e.target as HTMLTextAreaElement).selectionStart ?? val.length
-            setCaretIndex(caret)
-            const ht = findHashtagAt(val, caret)
-            const first = findFirstHashtag(val)
-            const q = ht?.query ?? (first?.label ?? '')
-            if (tagTimerRef.current) clearTimeout(tagTimerRef.current)
-            if (ht && q.length >= 1 && !disabled) {
-              tagTimerRef.current = setTimeout(async () => {
-                try {
-                  const lang = getUiLang()
-                  const res = await fetch(`/api/tags?lang=${encodeURIComponent(lang)}&search=${encodeURIComponent(q)}`)
-                  if (!res.ok) { setTagOpen(false); setTagSuggestions([]); return }
-                  const data = await res.json() as { options?: Array<{ label: string; value: string }> }
-                  const opts = Array.isArray(data?.options) ? data.options.slice(0, 8) : []
-                  setTagSuggestions(opts)
-                  const activeIdx = Math.max(0, opts.findIndex((o) => o.label === q))
-                  setTagIdx(activeIdx)
-                  setTagOpen(opts.length > 0)
-                  setTagQuery(q)
-                  // Если панель открывается по первому тегу (а курсор не в теге), переместим каретку на сам тег
-                  if (!ht && first && opts.length > 0) {
-                    setTimeout(() => {
-                      const el = textareaRef.current
-                      try {
-                        el?.setSelectionRange(first.start, first.start)
-                      } catch {}
-                    }, 0)
-                  }
-                } catch {
-                  setTagOpen(false)
-                }
-              }, 200)
-            } else {
-              setTagOpen(false)
-              setTagSuggestions([])
-              setTagIdx(0)
-              setTagQuery('')
-            }
+              // Пересчёт подсказок по хэштегу в позиции курсора
+              const caret = (e.target as HTMLTextAreaElement).selectionStart ?? val.length
+              recomputeTagSuggestions(val, caret)
               const t = val.trim()
               // Дебаунсим запрос к /api/completion и не дублируем одинаковый промпт
-              if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current)
+              if (suggestTimerRef.current) { clearTimeout(suggestTimerRef.current); suggestTimerRef.current = null }
               const canSuggest = t.length >= 3 && !disabled && !loading && autocompleteEnabled
               if (canSuggest) {
+                setSuggestTimerRunning(true)
                 suggestTimerRef.current = setTimeout(async () => {
+                  setSuggestTimerRunning(false)
                   // Запускаем, даже если текст не изменился, но курсор менялся/скроллили —
                   // перезапустим стрим при отсутствии активного стрима
                   if (lastPromptRef.current === t && suggestionTrimmed) return
@@ -930,7 +971,53 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               } else {
                 lastPromptRef.current = ""
                 try { stopSuggestion() } catch {}
+                setSuggestTimerRunning(false)
+                // При пустом поле — сбрасываем высоту до минимума
+                if (t.length === 0) {
+                  try {
+                    const el = textareaRef.current
+                    const ov = overlayRef.current
+                    if (el) {
+                      el.style.height = 'auto'
+                      const cs = getComputedStyle(el)
+                      const parsePx = (v: string) => (v.endsWith('px') ? parseFloat(v) : Number.NaN)
+                      const lineH = parsePx(cs.lineHeight) || parsePx(cs.fontSize) * 1.2 || 20
+                      const padT = parsePx(cs.paddingTop) || 0
+                      const padB = parsePx(cs.paddingBottom) || 0
+                      const maxH = Math.round(lineH * 30 + padT + padB)
+                      const taH = el.scrollHeight
+                      const ovH = ov ? (ov.style.height = 'auto', ov.scrollHeight) : 0
+                      const contentH = Math.max(taH, ovH)
+                      const clampedH = Math.min(contentH, maxH)
+                      el.style.height = `${clampedH}px`
+                      el.style.overflowY = 'hidden'
+                      if (ov) ov.style.height = `${clampedH}px`
+                      if (inputContainerRef.current) {
+                        inputContainerRef.current.style.height = `${clampedH}px`
+                        inputContainerRef.current.style.overflowY = 'hidden'
+                      }
+                    }
+                  } catch {}
+                }
               }
+            }}
+            onClick={(e: React.MouseEvent<HTMLTextAreaElement>) => {
+              const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+              recomputeTagSuggestions(inputValue, caret)
+            }}
+            onMouseUp={(e: React.MouseEvent<HTMLTextAreaElement>) => {
+              const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+              recomputeTagSuggestions(inputValue, caret)
+            }}
+            onSelect={(e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+              const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+              recomputeTagSuggestions(inputValue, caret)
+            }}
+            onFocus={(e: React.FocusEvent<HTMLTextAreaElement>) => {
+              setTimeout(() => {
+                const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+                recomputeTagSuggestions(inputValue, caret)
+              }, 0)
             }}
             onKeyDown={(e) => {
               // Навигация по подсказкам хештегов
@@ -939,23 +1026,18 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 if (e.key === 'ArrowUp') { e.preventDefault(); setTagIdx((i) => Math.max(i - 1, 0)); return }
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
-                  const ht = findHashtagAt(inputValue, caret)
                   const pick = tagSuggestions[tagIdx]
-                  if (ht && pick) {
-                    // Вставляем отформатированный тег: #label
-                    const formatted = `#${pick.label}`
-                    const next = inputValue.slice(0, ht.start) + formatted + inputValue.slice(ht.end)
-                    setInputValue(next)
+                  if (pick) {
+                    // Всегда используем канонический лейбл без пробелов
+                    const canonical = resolveCanonicalLabel(pick.value, tagSuggestions) || pick.label
+                    // Вставляем только #label (без синонимов). Синонимы выбираются отдельно внизу.
+                    const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+                    setCaretIndex(caret)
+                    insertTagAtSelection(canonical, pick.value, undefined, true)
                     setTagOpen(false)
                     setTagSuggestions([])
                     setTagIdx(0)
                     setTagQuery('')
-                    // Переместим курсор в конец вставленного токена
-                    setTimeout(() => {
-                      const el = textareaRef.current
-                      try { el?.setSelectionRange(ht.start + formatted.length, ht.start + formatted.length) } catch {}
-                    }, 0)
                     return
                   }
                 }
@@ -969,6 +1051,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   setInputValue(accept)
                   try { stopSuggestion() } catch {}
                   lastPromptRef.current = accept.trim()
+                  setSuggestTimerRunning(false)
+                  if (suggestTimerRef.current) { clearTimeout(suggestTimerRef.current); suggestTimerRef.current = null }
                   // Снимаем выделение и ставим курсор в конец
                   setTimeout(() => {
                     try {
@@ -1019,6 +1103,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 setInputValue('')
                 setSuggestion('')
                 try { stopSuggestion() } catch {}
+                setSuggestTimerRunning(false)
+                if (suggestTimerRef.current) { clearTimeout(suggestTimerRef.current); suggestTimerRef.current = null }
                 // Обновим высоту после очистки
                 setTimeout(() => {
                   try {
@@ -1046,6 +1132,17 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                     }
                   } catch {}
                 }, 0)
+              }
+            }}
+            onKeyUp={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+              // Переключение активного #label при перемещении каретки без изменения текста
+              const navKeys = new Set([
+                'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+                'Home', 'End', 'PageUp', 'PageDown'
+              ])
+              if (navKeys.has(e.key)) {
+                const caret = (e.currentTarget as HTMLTextAreaElement).selectionStart ?? inputValue.length
+                recomputeTagSuggestions(inputValue, caret)
               }
             }}
           placeholder={disabled ? "Недостаточно кредитов" : "Введите сообщение..."}
@@ -1084,10 +1181,10 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 </span>
               ))
             })()}
-            {showGhost && (displayRemainder || completionTyping) ? (
+            {(showRemainder || showTimerDots) ? (
                 <span className="text-muted-foreground/60">
-                  {displayRemainder}
-                  {completionTyping ? (
+                  {showRemainder ? displayRemainder : null}
+                  {showTimerDots ? (
                     <span className="inline-flex items-center align-baseline ml-1 gap-0.5">
                       <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-200ms]"></span>
                       <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-100ms]"></span>
@@ -1097,34 +1194,47 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 </span>
               ) : null}
             </pre>
+            {/* Кнопка с иконкой в правом верхнем углу инпута (показывать только если есть текст) */}
+            {inputValue.trim() ? (
+              <div className="absolute right-2 top-2 z-10">
+                <button
+                  type="button"
+                  aria-label="Magic"
+                  className="group bg-muted border border-border text-muted-foreground rounded-full h-6 w-6 inline-flex items-center justify-center transition hover:bg-muted/80"
+                >
+                  <FaMagic className="h-3 w-3 opacity-70 group-hover:opacity-100" />
+                </button>
+              </div>
+            ) : null}
         </div>
         {/* Под полем: подсказки #тегов */}
         {(tagOpen && tagSuggestions.length > 0) ? (
-          <div className="px-2 pb-2 bg-secondary flex flex-col gap-1 relative z-10">
-            <div className="px-2 py-2  backdrop-blur supports-[backdrop-filter]:bg-secondary">
+          <div className="px-2 pb-2 bg-secondary relative z-10">
+            <div className="px-2 py-2 backdrop-blur supports-[backdrop-filter]:bg-secondary">
                 {(() => {
                   const active = tagSuggestions[tagIdx]
                   if (!active) return null
                   const groupLabels = Array.from(new Set(tagSuggestions.filter((o) => o.value === active.value).map((o) => o.label)))
                   if (groupLabels.length <= 1) return null
-                  const chosen = Array.from(selectedSynonymsByLabel[active.label] ?? [])
+                  const canonicalLabel = resolveCanonicalLabel(active.value, tagSuggestions) || active.label
+                  const chosen = Array.from(selectedSynonymsByLabel[canonicalLabel] ?? [])
                   return (
                     <div className="p-2 text-xs text-foreground">
-                      <div className="mb-2 font-medium">#{active.label}:</div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {groupLabels.filter((l) => l !== active.label).map((l) => {
+                      <div className="mb-1 font-medium">#{canonicalLabel}:</div>
+                      <div className="h-24 overflow-x-auto overflow-y-hidden grid grid-flow-col auto-cols-max grid-rows-3 content-start items-start gap-1.5 pr-2">
+                        {groupLabels.filter((l) => l !== canonicalLabel).map((l) => {
                           const picked = chosen.includes(l)
                           return (
                             <button
                               key={l}
                               type="button"
                               className={
-                                `inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs ` +
+                                `shrink-0 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs ` +
                                 (picked
                                   ? 'bg-primary text-primary-foreground border-primary'
                                   : 'bg-background text-secondary-foreground hover:bg-secondary/80')
                               }
-                              onClick={() => toggleSynonym(active.label, l)}
+                              onClick={() => toggleSynonym(canonicalLabel, l)}
                             >
                               <span className="font-medium">{l}</span>
                             </button>
@@ -1147,9 +1257,10 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 setAutocompleteEnabled((prev) => {
                   const next = !prev
                   if (!next) {
-                    if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current)
+                    if (suggestTimerRef.current) { clearTimeout(suggestTimerRef.current); suggestTimerRef.current = null }
                     try { stopSuggestion() } catch {}
                     setSuggestion('')
+                    setSuggestTimerRunning(false)
                   }
                   return next
                 })
@@ -1161,53 +1272,71 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   : 'text-muted-foreground hover:bg-muted/50') + ' rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'
               }
             >
-                    <RiAiGenerateText className="size-4" />
+                    <BsInputCursor className="size-4" />
             </AIInputButton>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
                   <p>{autocompleteEnabled ? 'Отключить автодополнение' : 'Включить автодополнение'}</p>
                 </TooltipContent>
               </Tooltip>
-              {/* Image toggle */}
+              {/* Extra text generation button (before voice) */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <AIInputButton
-                    aria-pressed={false}
+                  <Button
+                    type="button"
                     className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
+                    variant="ghost"
                   >
-                    <RiImageCircleAiLine className="size-4" />
-                  </AIInputButton>
+                    <RiAiGenerateText className="size-4" />
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
-                  <p>Генерация изображения</p>
+                  <p>Шаблон для поста</p>
+                </TooltipContent>
+              </Tooltip>
+              {/* Image button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
+                    variant="ghost"
+                  >
+                    <RiImageCircleAiLine className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="z-[10000]">
+                  <p>Шаблон генерации изображения</p>
                 </TooltipContent>
               </Tooltip>
               {/* Voice toggle */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <AIInputButton
-                    aria-pressed={false}
+                  <Button
+                    type="button"
                     className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
+                    variant="ghost"
                   >
                     <RiMicAiLine className="size-4" />
-                  </AIInputButton>
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
-                  <p>Голосовой режим</p>
+                  <p>Шаблон генерации аудио</p>
                 </TooltipContent>
               </Tooltip>
               {/* Video toggle */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <AIInputButton
-                    aria-pressed={false}
+                  <Button
+                    type="button"
                     className={'text-muted-foreground hover:bg-muted/50 rounded-full h-8 w-8 p-0 inline-flex items-center justify-center'}
+                    variant="ghost"
                   >
                     <RiFilmAiLine className="size-4" />
-                  </AIInputButton>
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent className="z-[10000]">
-                  <p>Видео</p>
+                  <p>Шаблон генерации видео</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
