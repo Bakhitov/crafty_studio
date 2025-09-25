@@ -1155,9 +1155,9 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               <button
                 type="button"
                 aria-label="Magic"
-                className="text-muted-foreground hover:bg-muted/60 rounded-full h-7 w-7 inline-flex items-center justify-center shadow-sm"
+                className="text-muted-foreground bg-muted/40 hover:bg-muted/70 rounded-full h-6 w-6 inline-flex items-center justify-center opacity-70 hover:opacity-100 transition"
               >
-                <FaMagic className="h-3.5 w-3.5" />
+                <FaMagic className="h-3 w-3" />
               </button>
             </div>
         </div>
