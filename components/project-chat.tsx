@@ -340,9 +340,9 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
 
   const applySynonymsToText = (label: string, synonyms: string[]) => {
     const formatted = `#${label}${synonyms.length ? ` (${synonyms.join(', ')})` : ''}`
-    // 1) Если курсор в теге этого label — заменяем его
+    // 1) Если курсор в теге — заменяем текущий токен целиком (независимо от исходного лейбла)
     const at = findHashtagAt(inputValue, caretIndex)
-    if (at && new RegExp(`^#${escapeForRegExp(label)}(\b|\s|$)`).test(at.token)) {
+    if (at) {
       const next = inputValue.slice(0, at.start) + formatted + inputValue.slice(at.end)
       setInputValue(next)
       setTimeout(() => {
@@ -1185,12 +1185,13 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   if (!active) return null
                   const groupLabels = Array.from(new Set(tagSuggestions.filter((o) => o.value === active.value).map((o) => o.label)))
                   if (groupLabels.length <= 1) return null
-                  const chosen = Array.from(selectedSynonymsByLabel[active.label] ?? [])
+                  const canonicalLabel = resolveCanonicalLabel(active.value, tagSuggestions) || active.label
+                  const chosen = Array.from(selectedSynonymsByLabel[canonicalLabel] ?? [])
                   return (
                     <div className="p-2 text-xs text-foreground">
-                      <div className="mb-2 font-medium">#{active.label}:</div>
+                      <div className="mb-2 font-medium">#{canonicalLabel}:</div>
                       <div className="flex flex-wrap gap-1.5">
-                        {groupLabels.filter((l) => l !== active.label).map((l) => {
+                        {groupLabels.filter((l) => l !== canonicalLabel).map((l) => {
                           const picked = chosen.includes(l)
                           return (
                             <button
@@ -1202,7 +1203,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                                   ? 'bg-primary text-primary-foreground border-primary'
                                   : 'bg-background text-secondary-foreground hover:bg-secondary/80')
                               }
-                              onClick={() => toggleSynonym(active.label, l)}
+                              onClick={() => toggleSynonym(canonicalLabel, l)}
                             >
                               <span className="font-medium">{l}</span>
                             </button>
