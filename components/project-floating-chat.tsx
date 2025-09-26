@@ -94,7 +94,7 @@ export const ProjectFloatingChat = ({ projectId }: ProjectFloatingChatProps) => 
         createPortal(
           <div
             ref={containerRef}
-            className="pointer-events-auto fixed left-2 top-2 z-[9999] flex resize flex-col overflow-hidden rounded-3xl border bg-background shadow-2xl"
+            className="pointer-events-auto fixed left-2 top-2 z-[30] flex resize flex-col overflow-hidden rounded-3xl border bg-background shadow-2xl"
             style={{
               width: size.w,
               height: size.h,
