@@ -12,28 +12,28 @@ export const GET = async (req: Request) => {
 
     const rows = await database.select().from(tagsTable);
 
+    // Фильтруем только по key_en (регистронезависимо). Больше ни по каким полям не ищем
+    const keyFiltered = q
+      ? (rows as any[]).filter((row) => String(row.keyEn).toLowerCase().includes(q))
+      : (rows as any[]);
+
     const options: Array<{ label: string; value: string; expandable: boolean; hasChildren: boolean; baseLabel: string }> = [];
-    for (const row of rows as any[]) {
+    for (const row of keyFiltered) {
       const labels = (row.labels ?? {}) as Record<string, string>;
       const synonyms = (row.synonyms ?? {}) as Record<string, string[]>;
       const synArr = Array.isArray(synonyms?.[lang]) && synonyms[lang].length > 0
         ? synonyms[lang]
         : (Array.isArray(synonyms?.['en']) ? synonyms['en'] : []);
 
-      const filteredSyns = q
-        ? synArr.filter((s) => s.toLowerCase().includes(q))
-        : synArr;
-
-      if (filteredSyns.length > 0) {
-        for (const s of filteredSyns) {
+      // Не фильтруем список синонимов по запросу: возвращаем их все для данного key_en
+      if (synArr.length > 0) {
+        for (const s of synArr) {
           options.push({ label: s, value: row.keyEn as string, expandable: false, hasChildren: false, baseLabel: (labels[lang] || labels['en'] || row.keyEn) as string });
         }
       } else {
-        // Fallback к основному label, если синонимов нет или фильтр отсёк все
-        const fallbackLabel = labels[lang] || labels['en'] || row.keyEn;
-        if (!q || fallbackLabel.toLowerCase().includes(q) || String(row.keyEn).toLowerCase().includes(q)) {
-          options.push({ label: fallbackLabel as string, value: row.keyEn as string, expandable: false, hasChildren: false, baseLabel: fallbackLabel as string });
-        }
+        // Если синонимов нет — возвращаем базовый label
+        const fallbackLabel = (labels[lang] || labels['en'] || row.keyEn) as string;
+        options.push({ label: fallbackLabel, value: row.keyEn as string, expandable: false, hasChildren: false, baseLabel: fallbackLabel });
       }
     }
 
