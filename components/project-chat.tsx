@@ -266,6 +266,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const tagTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [caretIndex, setCaretIndex] = useState(0)
   const [selectedSynonymsByLabel, setSelectedSynonymsByLabel] = useState<Record<string, Set<string>>>({})
+  const [leafSynonyms, setLeafSynonyms] = useState<string[]>([])
+  const [leafHeadingLabel, setLeafHeadingLabel] = useState<string>("")
 
   const getCurrentHashtagLabels = (text: string): Set<string> => {
     const set = new Set<string>()
@@ -546,6 +548,31 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       setTagQuery('')
     }
   }
+
+  // Load synonyms for active leaf item (hierarchical mode) to show chips
+  useEffect(() => {
+    const active = tagOpen && tagSuggestions.length > 0 ? tagSuggestions[tagIdx] : null
+    const run = async () => {
+      if (!active || !active.isLeaf) { setLeafSynonyms([]); setLeafHeadingLabel(''); return }
+      try {
+        const res = await fetch(`/api/tags?key=${encodeURIComponent(active.value)}`)
+        if (!res.ok) { setLeafSynonyms([]); setLeafHeadingLabel(active.baseLabel || active.label); return }
+        const data = await res.json() as { labels?: Record<string, string>; synonyms?: Record<string, string[]>; keyEn?: string }
+        const lang = getUiLang()
+        const labels = (data?.labels ?? {}) as Record<string, string>
+        const synonyms = (data?.synonyms ?? {}) as Record<string, string[]>
+        const syn = Array.isArray(synonyms?.[lang]) && synonyms[lang].length > 0
+          ? synonyms[lang]
+          : (Array.isArray(synonyms?.['en']) ? synonyms['en'] : [])
+        setLeafSynonyms(Array.from(new Set((syn as string[]).filter(Boolean))))
+        setLeafHeadingLabel(active.baseLabel || labels[lang] || labels['en'] || active.label)
+      } catch {
+        setLeafSynonyms([])
+        setLeafHeadingLabel(active.baseLabel || active.label)
+      }
+    }
+    void run()
+  }, [tagOpen, tagSuggestions, tagIdx])
 
   const insertTagPathAtSelection = (path: string, keepOpenForChildren: boolean) => {
     const formatted = `#${path}${keepOpenForChildren ? '/' : ''}`
@@ -1254,23 +1281,15 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
 
               {(() => {
                 const active = tagSuggestions[tagIdx] as any
-                if (!active) return null
-                const showSynonyms = Boolean(active?.isLeaf) && Array.isArray(tagOptionsAll) && tagOptionsAll.filter((o: any) => o.value === active.value).length > 1
-                if (!showSynonyms) return null
-                const allForValue = tagOptionsAll.filter((o: any) => o.value === active.value)
-                const allLabels = Array.from(new Set(allForValue.map((o: any) => o.label)))
-                if (allLabels.length === 0) return null
-                const baseKey = (() => {
-                  const inAll = allForValue.find((o: any) => typeof o.baseLabel === 'string')
-                  return (inAll?.baseLabel || resolveCanonicalLabel(active.value, allForValue) || active.label)
-                })()
-                const headingLabel = baseKey
-                const chosen = Array.from(selectedSynonymsByLabel[baseKey] ?? [])
+                if (!active || !active.isLeaf) return null
+                if (!leafSynonyms || leafSynonyms.length === 0) return null
+                const headingLabel = leafHeadingLabel || active.label
+                const chosen = Array.from(selectedSynonymsByLabel[headingLabel] ?? [])
                 return (
                   <div className=" text-xs text-foreground">
                     <div className="mb-2 font-medium">#{headingLabel}:</div>
                     <div className="h-24 overflow-x-auto overflow-y-hidden grid grid-flow-col auto-cols-max grid-rows-3 content-start items-start gap-1.5 pr-2">
-                      {allLabels.filter((l) => l !== headingLabel).map((l) => {
+                      {leafSynonyms.map((l: string) => {
                         const picked = chosen.includes(l)
                         return (
                           <button
@@ -1282,7 +1301,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                                 ? 'bg-primary text-primary-foreground border-primary'
                                 : 'bg-background text-secondary-foreground hover:bg-secondary/80')
                             }
-                            onClick={() => toggleSynonym(baseKey, l)}
+                            onClick={() => toggleSynonym(headingLabel, l)}
                           >
                             <span className="font-medium">{l}</span>
                           </button>
