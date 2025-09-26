@@ -1164,8 +1164,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 {(() => {
                   const active = tagSuggestions[tagIdx]
                   if (!active) return null
-                  const groupLabels = Array.from(new Set(tagOptionsAll.filter((o) => o.value === active.value).map((o) => o.label)))
-                  if (groupLabels.length <= 1) return null
+                const allLabels = Array.from(new Set(tagOptionsAll.map((o) => o.label)))
+                if (allLabels.length === 0) return null
                   const baseKey = (() => {
                     const inAll = tagOptionsAll.find((o) => o.value === active.value && typeof o.baseLabel === 'string')
                     return (inAll?.baseLabel || resolveCanonicalLabel(active.value, tagOptionsAll) || active.label)
@@ -1176,7 +1176,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                     <div className=" text-xs text-foreground">
                       <div className="font-medium">#{headingLabel}:</div>
                       <div className="h-24 overflow-x-auto overflow-y-hidden grid grid-flow-col auto-cols-max grid-rows-3 content-start items-start gap-1.5 pr-2">
-                        {groupLabels.filter((l) => l !== headingLabel).map((l) => {
+                        {allLabels.filter((l) => l !== headingLabel).map((l) => {
                           const picked = chosen.includes(l)
                           return (
                             <button
