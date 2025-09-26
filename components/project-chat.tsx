@@ -630,12 +630,14 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   }
 
   const pickTagOption = (opt: TagOption) => {
-    const expandable = Boolean(opt.expandable || opt.hasChildren)
-    if (expandable && !opt.isLeaf) {
+    const hasChildren = Boolean(opt.expandable || opt.hasChildren)
+    if (hasChildren) {
+      // Всегда углубляемся, если есть дети: подставляем '/'
       insertTagPathAtSelection(opt.value, true)
       setTagOpen(true)
       return
     }
+    // Иначе — лист
     insertTagPathAtSelection(opt.value, false)
     setTagOpen(false)
   }
