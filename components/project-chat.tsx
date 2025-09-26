@@ -268,6 +268,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const [selectedSynonymsByLabel, setSelectedSynonymsByLabel] = useState<Record<string, Set<string>>>({})
   const [leafSynonyms, setLeafSynonyms] = useState<string[]>([])
   const [leafHeadingLabel, setLeafHeadingLabel] = useState<string>("")
+  const [childOptions, setChildOptions] = useState<TagOption[]>([])
+  const [childHeadingLabel, setChildHeadingLabel] = useState<string>("")
 
   const getCurrentHashtagLabels = (text: string): Set<string> => {
     const set = new Set<string>()
@@ -569,6 +571,27 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       } catch {
         setLeafSynonyms([])
         setLeafHeadingLabel(active.baseLabel || active.label)
+      }
+    }
+    void run()
+  }, [tagOpen, tagSuggestions, tagIdx])
+
+  // Load immediate children for active expandable item to show as chips
+  useEffect(() => {
+    const active = tagOpen && tagSuggestions.length > 0 ? tagSuggestions[tagIdx] : null
+    const run = async () => {
+      if (!active || !(active.expandable || active.hasChildren) || active.isLeaf) { setChildOptions([]); setChildHeadingLabel(''); return }
+      try {
+        const lang = getUiLang()
+        const res = await fetch(`/api/tags?lang=${encodeURIComponent(lang)}&parent=${encodeURIComponent(active.value)}`)
+        if (!res.ok) { setChildOptions([]); setChildHeadingLabel(active.baseLabel || active.label); return }
+        const data = await res.json() as { options?: TagOption[] }
+        const opts = Array.isArray(data?.options) ? data.options : []
+        setChildOptions(opts)
+        setChildHeadingLabel(active.baseLabel || active.label)
+      } catch {
+        setChildOptions([])
+        setChildHeadingLabel(active.baseLabel || active.label || '')
       }
     }
     void run()
@@ -1278,6 +1301,39 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   )
                 })}
               </div>
+
+              {(() => {
+                const active = tagSuggestions[tagIdx] as any
+                if (!active || !(active.expandable || active.hasChildren) || active.isLeaf) return null
+                if (!childOptions || childOptions.length === 0) return null
+                const heading = childHeadingLabel || active.label
+                return (
+                  <div className="mb-2 text-xs text-foreground">
+                    <div className="mb-2 font-medium">В {heading}:</div>
+                    <div className="h-24 overflow-x-auto overflow-y-hidden grid grid-flow-col auto-cols-max grid-rows-3 content-start items-start gap-1.5 pr-2">
+                      {childOptions.map((c: TagOption) => {
+                        const lastSeg = String(c.value || '').split('/').slice(-1)[0]
+                        const canGoDeeper = Boolean((c as any).expandable || (c as any).hasChildren) && !c.isLeaf
+                        return (
+                          <button
+                            key={c.value}
+                            type="button"
+                            className={
+                              `w-min whitespace-nowrap inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs ` +
+                              (canGoDeeper
+                                ? 'bg-background text-secondary-foreground hover:bg-secondary/80'
+                                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80')
+                            }
+                            onClick={() => pickTagOption(c)}
+                          >
+                            <span className="font-medium">{lastSeg}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
 
               {(() => {
                 const active = tagSuggestions[tagIdx] as any
