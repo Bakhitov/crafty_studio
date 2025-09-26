@@ -99,15 +99,17 @@ export const POST = async (
             }
 
             // Create private user tags for unknown values (basic slugify fallback)
+            // Allow forward slashes to preserve hierarchy in keyEn
             const slugify = (s: string) =>
               (
                 s
                   .trim()
                   .toLowerCase()
                   .replace(/\s+/g, '-')
-                  .replace(/[^a-z0-9-_]/g, '-')
-                  .replace(/-+/g, '-')
-                  .replace(/^[-_]+|[-_]+$/g, '')
+                  .replace(/[^a-z0-9-_/]/g, '-')
+                  .replace(/-{2,}/g, '-')
+                  .replace(/\/{2,}/g, '/')
+                  .replace(/^(?:[-_\/]+)|(?:[-_\/]+)$/g, '')
               ) || `tag-${Date.now()}`
 
             if (unknown.length > 0) {

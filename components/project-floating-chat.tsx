@@ -30,21 +30,23 @@ export const ProjectFloatingChat = ({ projectId }: ProjectFloatingChatProps) => 
   useEffect(() => {
     const key = `project-chat-size:${projectId}`
     const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null
-    const clampHeight = (h: number) => {
+    const computeHeight = (h: number) => {
       const top = 8 // top-2
       const bottom = 8 // небольшой нижний отступ
-      const maxH = Math.max(1200, window.innerHeight - top - bottom)
-      return Math.min(h, maxH)
+      const maxH = Math.max(300, window.innerHeight - top - bottom)
+      const minH = Math.max(300, Math.round(maxH * 0.9)) // по умолчанию ~90% экрана
+      // гарантируем не меньше 90% окна, но не больше maxH
+      return Math.min(maxH, Math.max(h, minH))
     }
     if (raw) {
       try {
         const parsed = JSON.parse(raw) as { w: number; h: number }
-        setSize({ w: parsed.w, h: clampHeight(parsed.h) })
+        setSize({ w: parsed.w, h: computeHeight(parsed.h) })
         return
       } catch {}
     }
     if (typeof window !== 'undefined') {
-      setSize({ w: 360, h: clampHeight(Math.round(window.innerHeight - 16)) })
+      setSize({ w: 360, h: computeHeight(Math.round(window.innerHeight - 16)) })
     }
   }, [projectId])
 
@@ -67,7 +69,8 @@ export const ProjectFloatingChat = ({ projectId }: ProjectFloatingChatProps) => 
         if (!prev) return prev
         const top = 8, bottom = 8
         const maxH = Math.max(300, window.innerHeight - top - bottom)
-        return { w: prev.w, h: Math.min(prev.h, maxH) }
+        const minH = Math.max(300, Math.round(maxH * 0.9))
+        return { w: prev.w, h: Math.min(maxH, Math.max(prev.h, minH)) }
       })
     }
     window.addEventListener('resize', handleWinResize)
@@ -97,7 +100,7 @@ export const ProjectFloatingChat = ({ projectId }: ProjectFloatingChatProps) => 
               height: size.h,
               minWidth: 320,
               minHeight: 300,
-              maxHeight: `calc(100vh - 16px)`,
+              maxHeight: `calc(100dvh - 16px)`,
             }}
           >
             <div className="flex items-center justify-between border-b px-2 py-1">

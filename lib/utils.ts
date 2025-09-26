@@ -9,7 +9,8 @@ export function cn(...inputs: ClassValue[]) {
 export const extractHashtags = (text: string): string[] => {
   if (!text) return [];
   // Match #тег, allow unicode letters and digits, dash and underscore
-  const regex = /(^|\s)(#([\p{L}\p{N}_-]{1,64}))/gu;
+  // Extend to allow forward slashes for hierarchical tags
+  const regex = /(^|\s)(#([\p{L}\p{N}_/\-]{1,64}))/gu;
   const out: string[] = [];
   let m: RegExpExecArray | null;
   while ((m = regex.exec(text)) !== null) {
