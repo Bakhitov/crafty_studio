@@ -1142,18 +1142,27 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
             {/* Кнопка с иконкой в правом верхнем углу инпута (показывать только если есть текст) */}
             {inputValue.trim() ? (
               <div className="absolute right-2 top-2 z-10">
-                <button
-                  type="button"
-                  aria-label="Magic"
-                  className="group bg-muted border border-border text-muted-foreground rounded-full h-6 w-6 inline-flex items-center justify-center transition hover:bg-muted/80"
-                  onClick={() => setMagicOpen(true)}
-                >
-                  {magicLoading ? (
-                    <span className="h-3 w-3 inline-block animate-spin border-2 border-current border-t-transparent rounded-full"></span>
-                  ) : (
-                    <FaMagic className="h-3 w-3 opacity-70 group-hover:opacity-100" />
-                  )}
-                </button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Magic"
+                        className="group bg-muted border border-border text-muted-foreground rounded-full h-6 w-6 inline-flex items-center justify-center transition hover:bg-muted/80"
+                        onClick={() => setMagicOpen(true)}
+                      >
+                        {magicLoading ? (
+                          <span className="h-3 w-3 inline-block animate-spin border-2 border-current border-t-transparent rounded-full"></span>
+                        ) : (
+                          <FaMagic className="h-3 w-3 opacity-70 group-hover:opacity-100" />
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Улучшить текст</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             ) : null}
         </div>
@@ -1164,8 +1173,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                 {(() => {
                   const active = tagSuggestions[tagIdx]
                   if (!active) return null
-                  const groupLabels = Array.from(new Set(tagOptionsAll.filter((o) => o.value === active.value).map((o) => o.label)))
-                  if (groupLabels.length <= 1) return null
+                const allLabels = Array.from(new Set(tagOptionsAll.map((o) => o.label)))
+                if (allLabels.length === 0) return null
                   const baseKey = (() => {
                     const inAll = tagOptionsAll.find((o) => o.value === active.value && typeof o.baseLabel === 'string')
                     return (inAll?.baseLabel || resolveCanonicalLabel(active.value, tagOptionsAll) || active.label)
@@ -1174,16 +1183,16 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                   const chosen = Array.from(selectedSynonymsByLabel[baseKey] ?? [])
                   return (
                     <div className=" text-xs text-foreground">
-                      <div className="font-medium">#{headingLabel}:</div>
+                      <div className="mb-2 font-medium">#{headingLabel}:</div>
                       <div className="h-24 overflow-x-auto overflow-y-hidden grid grid-flow-col auto-cols-max grid-rows-3 content-start items-start gap-1.5 pr-2">
-                        {groupLabels.filter((l) => l !== headingLabel).map((l) => {
+                        {allLabels.filter((l) => l !== headingLabel).map((l) => {
                           const picked = chosen.includes(l)
                           return (
                             <button
                               key={l}
                               type="button"
                               className={
-                                `shrink-0 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs ` +
+                                `w-min whitespace-nowrap inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs ` +
                                 (picked
                                   ? 'bg-primary text-primary-foreground border-primary'
                                   : 'bg-background text-secondary-foreground hover:bg-secondary/80')

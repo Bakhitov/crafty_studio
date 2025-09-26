@@ -53,7 +53,7 @@ export const POST = async (req: Request) => {
       temperature,
       system: [
         'You are a text correction engine.',
-        'Correct any grammar, spelling, and punctuation errors in the user\'s text.',
+        'Correct any grammar and spelling errors in the  text.',
         'Return ONLY the corrected version of the text. Do not add any extra explanations or apologies.',
         'Preserve the original language and style.',
         'If the text is already correct, return it as is.',

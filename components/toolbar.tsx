@@ -172,7 +172,7 @@ const GalleryButton = ({
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full"
+            className="rounded-full ml-2"
             onClick={() => openGallery()}
           >
             <TbFolders size={14} />

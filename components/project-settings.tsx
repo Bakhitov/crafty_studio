@@ -96,8 +96,8 @@ export const ProjectSettings = ({ data }: ProjectSettingsProps) => {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Project settings</DialogTitle>
-          <DialogDescription>Update your project's details.</DialogDescription>
+          <DialogTitle>Настройки проекта</DialogTitle>
+          <DialogDescription>Обновите данные вашего проекта.</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={handleUpdateProject}
@@ -105,16 +105,16 @@ export const ProjectSettings = ({ data }: ProjectSettingsProps) => {
           aria-disabled={isUpdating}
         >
           <div className="grid gap-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">Название</Label>
             <Input
               id="name"
-              placeholder="My new project"
+              placeholder="Мой новый проект"
               value={name}
               onChange={({ target }) => setName(target.value)}
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="transcriptionModel">Transcription model</Label>
+            <Label htmlFor="transcriptionModel">Модель транскрипции</Label>
             <ModelSelector
               id="transcriptionModel"
               value={transcriptionModel}
@@ -125,7 +125,7 @@ export const ProjectSettings = ({ data }: ProjectSettingsProps) => {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="visionModel">Vision model</Label>
+            <Label htmlFor="visionModel">Модель распознования изображений</Label>
             <ModelSelector
               id="visionModel"
               value={visionModel}
@@ -146,7 +146,7 @@ export const ProjectSettings = ({ data }: ProjectSettingsProps) => {
             className="flex items-center gap-2 text-destructive"
           >
             <TrashIcon size={16} />
-            <span>Delete</span>
+            <span>Удалить</span>
           </Button>
         </DialogFooter>
       </DialogContent>
