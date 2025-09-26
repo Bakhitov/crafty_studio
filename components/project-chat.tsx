@@ -257,9 +257,10 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const [magicLoading, setMagicLoading] = useState(false)
 
   // Hashtag suggestions state
+  type TagOption = { label: string; value: string; baseLabel?: string; expandable?: boolean; hasChildren?: boolean; isLeaf?: boolean }
   const [tagQuery, setTagQuery] = useState<string>("")
-  const [tagSuggestions, setTagSuggestions] = useState<Array<{ label: string; value: string }>>([])
-  const [tagOptionsAll, setTagOptionsAll] = useState<Array<{ label: string; value: string; baseLabel?: string }>>([])
+  const [tagSuggestions, setTagSuggestions] = useState<TagOption[]>([])
+  const [tagOptionsAll, setTagOptionsAll] = useState<TagOption[]>([])
   const [tagOpen, setTagOpen] = useState(false)
   const [tagIdx, setTagIdx] = useState(0)
   const tagTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -268,8 +269,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
 
   const getCurrentHashtagLabels = (text: string): Set<string> => {
     const set = new Set<string>()
-    // Поддерживаем формат с опциональными скобками после лейбла: #label (тег1, тег2)
-    const re = /(^|\s)#([\p{L}\p{N}_-]{1,64})(?:\s*\([^)]*\))?(?=\s|$)/gu
+    // Поддерживаем формат с опциональными скобками после лейбла: #label (тег1, тег2) и допускаем слэши для иерархии
+    const re = /(^|\s)#([\p{L}\p{N}_/\-]{1,64})(?:\s*\([^)]*\))?(?=\s|$)/gu
     let m: RegExpExecArray | null
     while ((m = re.exec(text)) !== null) {
       const lbl = m[2]
@@ -283,7 +284,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const insertOrRemoveTag = (optOrLabel: { label: string; value: string } | string) => {
     const label = typeof optOrLabel === 'string' ? optOrLabel : optOrLabel.label
     const pickValue = typeof optOrLabel === 'string'
-      ? (tagSuggestions.find((o) => o.label === optOrLabel)?.value)
+      ? (tagSuggestions.find((o: { label: string; value: string }) => o.label === optOrLabel)?.value)
       : optOrLabel.value
     const exists = getCurrentHashtagLabels(inputValue).has(label)
     if (exists) {
@@ -298,7 +299,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     const ht = findCurrentHashtag(inputValue)
     // Сформируем формат: #label (синоним1, синоним2, ...), используя варианты с тем же value
     const groupLabels = pickValue
-      ? Array.from(new Set(tagSuggestions.filter((o) => o.value === pickValue).map((o) => o.label)))
+      ? Array.from(new Set(tagSuggestions.filter((o: { label: string; value: string }) => o.value === pickValue).map((o: { label: string }) => o.label)))
       : []
     const synonyms = groupLabels.filter((l) => l !== label)
     const formatted = `#${label}${synonyms.length ? ` (${synonyms.join(', ')})` : ''}`
@@ -324,7 +325,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   }
 
   const findFirstHashtag = (text: string): { start: number; end: number; label: string } | null => {
-    const re = /(^|\s)#([\p{L}\p{N}_-]{1,64})(?:\s*\([^)]*\))?(?=\s|$)/u
+    const re = /(^|\s)#([\p{L}\p{N}_/\-]{1,64})(?:\s*\([^)]*\))?(?=\s|$)/u
     const m = re.exec(text)
     if (!m) return null
     const leading = m[1] ?? ''
@@ -343,7 +344,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     onlyLabel?: boolean
   ) => {
     const groupLabels = pickValue
-      ? Array.from(new Set(tagSuggestions.filter((o) => o.value === pickValue).map((o) => o.label)))
+      ? Array.from(new Set(tagSuggestions.filter((o: { label: string; value: string }) => o.value === pickValue).map((o: { label: string }) => o.label)))
       : []
     const synonyms = onlyLabel
       ? []
@@ -414,12 +415,12 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     options: Array<{ label: string; value: string; baseLabel?: string }>
   ): string | null => {
     if (!pickValue) return null
-    const groupOptions = options.filter((o) => o.value === pickValue)
+    const groupOptions = options.filter((o: { value: string }) => o.value === pickValue)
     if (groupOptions.length === 0) return null
     // 0) Если бэкенд прислал базовый лейбл — используем его как канон (обычно en)
     const base = groupOptions.find((o) => typeof o.baseLabel === 'string' && o.baseLabel.trim().length > 0)?.baseLabel
     if (base) return base
-    const group = groupOptions.map((o) => o.label)
+    const group = groupOptions.map((o: { label: string }) => o.label)
     // 1) Англ. ASCII вариант (включая пробелы) — самый короткий
     const englishPreferred = group
       .filter((l) => /^[A-Za-z0-9 _-]+$/.test(l))
@@ -437,9 +438,10 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
   }
 
   const toggleSynonym = (label: string, synonym: string) => {
-    setSelectedSynonymsByLabel((prev) => {
+    setSelectedSynonymsByLabel((prev: Record<string, Set<string>>) => {
       const next = { ...prev }
-      const set = new Set(next[label] ?? [])
+      const existing = next[label] ? Array.from(next[label]) : ([] as string[])
+      const set = new Set<string>(existing as string[])
       if (set.has(synonym)) set.delete(synonym); else set.add(synonym)
       next[label] = set
       // После обновления стейта синхронно применим к тексту (используем вычисленный set)
@@ -452,8 +454,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     text: string,
     caret: number
   ): { start: number; end: number; token: string; query: string } | null => {
-    // Ищем токен вида #label (опционально со скобками) под курсором
-    const re = /(^|\s)#([\p{L}\p{N}_-]{0,64})(?:\s*\([^)]*\))?(?=\s|$)/gu
+    // Ищем токен вида #label (опционально со скобками) под курсором. Допускаем слэши в лейбле
+    const re = /(^|\s)#([\p{L}\p{N}_/\-]{0,64})(?:\s*\([^)]*\))?(?=\s|$)/gu
     let m: RegExpExecArray | null
     while ((m = re.exec(text)) !== null) {
       const leading = m[1] ?? ''
@@ -471,7 +473,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
 
   const findCurrentHashtag = (text: string): { start: number; end: number; token: string; query: string } | null => {
     // Найти последний #токен до курсора (без учёта курсора для простоты — по концу строки)
-    const re = /(^|\s)#([\p{L}\p{N}_-]{0,64})$/u
+    const re = /(^|\s)#([\p{L}\p{N}_/\-]{0,64})$/u
     const m = text.match(re)
     if (!m) return null
     const token = `#${m[2] ?? ''}`
@@ -502,7 +504,10 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       tagTimerRef.current = setTimeout(async () => {
         try {
           const lang = getUiLang()
-          const res = await fetch(`/api/tags?lang=${encodeURIComponent(lang)}&search=${encodeURIComponent(q)}`)
+          const parentPath = q.includes('/') ? q.split('/').slice(0, -1).join('/') : ''
+          const leaf = q.includes('/') ? q.split('/').slice(-1)[0] : q
+          const url = `/api/tags?lang=${encodeURIComponent(lang)}&parent=${encodeURIComponent(parentPath)}&search=${encodeURIComponent(leaf)}`
+          const res = await fetch(url)
           if (!res.ok) {
             setTagOpen(false)
             setTagSuggestions([])
@@ -511,14 +516,17 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
             setTagQuery('')
             return
           }
-          const data = await res.json() as { options?: Array<{ label: string; value: string; baseLabel?: string }> }
+          const data = await res.json() as { options?: Array<{ label: string; value: string; baseLabel?: string; expandable?: boolean; hasChildren?: boolean; isLeaf?: boolean }> }
           const all = Array.isArray(data?.options) ? data.options : []
           // keep full list for synonyms panel
           try { (setTagOptionsAll as any)(all) } catch {}
           // limit menu items for navigation/keyboard
           const opts = all.slice(0, 8)
           setTagSuggestions(opts)
-          const activeIdx = Math.max(0, opts.findIndex((o) => o.label === q))
+          const activeIdx = Math.max(0, opts.findIndex((o) => {
+            const lastSeg = String(o.value || '').split('/').slice(-1)[0]
+            return lastSeg.toLowerCase() === leaf.toLowerCase()
+          }))
           setTagIdx(activeIdx)
           setTagOpen(opts.length > 0)
           setTagQuery(q)
@@ -537,6 +545,49 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       setTagIdx(0)
       setTagQuery('')
     }
+  }
+
+  const insertTagPathAtSelection = (path: string, keepOpenForChildren: boolean) => {
+    const formatted = `#${path}${keepOpenForChildren ? '/' : ''}`
+    const where = findHashtagAt(inputValue, caretIndex) || findFirstHashtag(inputValue)
+    if (where) {
+      const next = inputValue.slice(0, where.start) + formatted + inputValue.slice(where.end)
+      setInputValue(next)
+      setTimeout(() => {
+        const el = textareaRef.current
+        try {
+          const newPos = where.start + formatted.length
+          el?.setSelectionRange(newPos, newPos)
+          // Рекалькуляция подсказок для следующего уровня, если оставили '/'
+          if (keepOpenForChildren) {
+            recomputeTagSuggestions(next, newPos)
+          }
+        } catch {}
+      }, 0)
+      return
+    }
+    const needSpace = inputValue.length > 0 && !/\s$/.test(inputValue)
+    const next = inputValue + (needSpace ? ' ' : '') + formatted
+    setInputValue(next)
+    setTimeout(() => {
+      const el = textareaRef.current
+      try {
+        const newPos = next.length
+        el?.setSelectionRange(newPos, newPos)
+        if (keepOpenForChildren) recomputeTagSuggestions(next, newPos)
+      } catch {}
+    }, 0)
+  }
+
+  const pickTagOption = (opt: TagOption) => {
+    const expandable = Boolean(opt.expandable || opt.hasChildren)
+    if (expandable && !opt.isLeaf) {
+      insertTagPathAtSelection(opt.value, true)
+      setTagOpen(true)
+      return
+    }
+    insertTagPathAtSelection(opt.value, false)
+    setTagOpen(false)
   }
 
   const getMessageText = (m: any): string => {
@@ -796,7 +847,7 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                                     onClick={async () => {
                                       const text = getMessageText(m)
                                       const tags = (() => {
-                                        const re = /(^|\s)#([\p{L}\p{N}_-]{1,64})/gu
+                                        const re = /(^|\s)#([\p{L}\p{N}_/\-]{1,64})/gu
                                         const set = new Set<string>()
                                         let mm: RegExpExecArray | null
                                         while ((mm = re.exec(text)) !== null) {
@@ -1032,6 +1083,12 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
               if (tagOpen && tagSuggestions.length > 0) {
                 if (e.key === 'ArrowDown') { e.preventDefault(); setTagIdx((i) => Math.min(i + 1, tagSuggestions.length - 1)); return }
                 if (e.key === 'ArrowUp') { e.preventDefault(); setTagIdx((i) => Math.max(i - 1, 0)); return }
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                const active = tagSuggestions[tagIdx]
+                if (active) pickTagOption(active as any)
+                return
+              }
                 if (e.key === 'Escape') { setTagOpen(false); return }
               }
               if (e.key === 'Tab') {
@@ -1103,8 +1160,8 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
             {(() => {
               const parts: Array<{ t: string; isTag: boolean }> = []
               if (inputValue.length > 0) {
-                // Подсвечиваем даже одинокую решётку (0..64 символов после #)
-                const re = /(#[\p{L}\p{N}_-]{0,64})/gu
+                // Подсвечиваем даже одинокую решётку (0..64 символов после #), поддерживаем слэши
+                const re = /(#[\p{L}\p{N}_/\-]{0,64})/gu
                 let lastIndex = 0
                 let m: RegExpExecArray | null
                 while ((m = re.exec(inputValue)) !== null) {
@@ -1170,43 +1227,71 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
         {(tagOpen && tagSuggestions.length > 0) ? (
           <div className="px-2 bg-secondary relative z-10">
             <div className="px-2 py-2 backdrop-blur supports-[backdrop-filter]:bg-secondary">
-                {(() => {
-                  const active = tagSuggestions[tagIdx]
-                  if (!active) return null
-                const allLabels = Array.from(new Set(tagOptionsAll.map((o) => o.label)))
-                if (allLabels.length === 0) return null
-                  const baseKey = (() => {
-                    const inAll = tagOptionsAll.find((o) => o.value === active.value && typeof o.baseLabel === 'string')
-                    return (inAll?.baseLabel || resolveCanonicalLabel(active.value, tagOptionsAll) || active.label)
-                  })()
-                  const headingLabel = baseKey
-                  const chosen = Array.from(selectedSynonymsByLabel[baseKey] ?? [])
+              {/* Список вариантов текущего уровня иерархии */}
+              <div className="mb-2 max-h-56 overflow-auto rounded-md border bg-background shadow-sm">
+                {tagSuggestions.map((opt: TagOption, i: number) => {
+                  const isActive = i === tagIdx
+                  const expandable = Boolean((opt as any).expandable || (opt as any).hasChildren)
+                  const isLeaf = Boolean((opt as any).isLeaf)
                   return (
-                    <div className=" text-xs text-foreground">
-                      <div className="mb-2 font-medium">#{headingLabel}:</div>
-                      <div className="h-24 overflow-x-auto overflow-y-hidden grid grid-flow-col auto-cols-max grid-rows-3 content-start items-start gap-1.5 pr-2">
-                        {allLabels.filter((l) => l !== headingLabel).map((l) => {
-                          const picked = chosen.includes(l)
-                          return (
-                            <button
-                              key={l}
-                              type="button"
-                              className={
-                                `w-min whitespace-nowrap inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs ` +
-                                (picked
-                                  ? 'bg-primary text-primary-foreground border-primary'
-                                  : 'bg-background text-secondary-foreground hover:bg-secondary/80')
-                              }
-                              onClick={() => toggleSynonym(baseKey, l)}
-                            >
-                              <span className="font-medium">{l}</span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
+                    <button
+                      key={`${opt.value}:${i}`}
+                      type="button"
+                      onMouseDown={(e: any) => { e.preventDefault(); pickTagOption(opt as TagOption) }}
+                      className={`flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left text-sm ${isActive ? 'bg-secondary/60' : ''}`}
+                    >
+                      <span className="truncate">
+                        <span className="font-medium">{opt.label}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">{opt.value}</span>
+                      </span>
+                      {expandable && !isLeaf ? (
+                        <span className="ml-2 text-muted-foreground">/</span>
+                      ) : null}
+                    </button>
                   )
-                })()}
+                })}
+              </div>
+
+              {(() => {
+                const active = tagSuggestions[tagIdx] as any
+                if (!active) return null
+                const showSynonyms = Boolean(active?.isLeaf) && Array.isArray(tagOptionsAll) && tagOptionsAll.filter((o: any) => o.value === active.value).length > 1
+                if (!showSynonyms) return null
+                const allForValue = tagOptionsAll.filter((o: any) => o.value === active.value)
+                const allLabels = Array.from(new Set(allForValue.map((o: any) => o.label)))
+                if (allLabels.length === 0) return null
+                const baseKey = (() => {
+                  const inAll = allForValue.find((o: any) => typeof o.baseLabel === 'string')
+                  return (inAll?.baseLabel || resolveCanonicalLabel(active.value, allForValue) || active.label)
+                })()
+                const headingLabel = baseKey
+                const chosen = Array.from(selectedSynonymsByLabel[baseKey] ?? [])
+                return (
+                  <div className=" text-xs text-foreground">
+                    <div className="mb-2 font-medium">#{headingLabel}:</div>
+                    <div className="h-24 overflow-x-auto overflow-y-hidden grid grid-flow-col auto-cols-max grid-rows-3 content-start items-start gap-1.5 pr-2">
+                      {allLabels.filter((l) => l !== headingLabel).map((l) => {
+                        const picked = chosen.includes(l)
+                        return (
+                          <button
+                            key={l}
+                            type="button"
+                            className={
+                              `w-min whitespace-nowrap inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs ` +
+                              (picked
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'bg-background text-secondary-foreground hover:bg-secondary/80')
+                            }
+                            onClick={() => toggleSynonym(baseKey, l)}
+                          >
+                            <span className="font-medium">{l}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
               </div>
           </div>
         ) : null}
