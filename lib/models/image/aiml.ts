@@ -80,29 +80,8 @@ const toUint8 = async (value: string): Promise<Uint8Array> => {
   throw new Error('No base64 decoder available in this runtime');
 };
 
-type MinimalImageModel = {
-  modelId: string;
-  provider?: string;
-  specificationVersion?: string;
-  maxImagesPerCall?: number;
-  doGenerate: (
-    args: {
-      prompt: string;
-      abortSignal?: AbortSignal;
-      headers?: Record<string, string | undefined>;
-      size?: string;
-      seed?: number;
-      providerOptions?: unknown;
-    }
-  ) => Promise<{
-    images: Uint8Array[];
-    warnings: string[];
-    response: { timestamp: Date; modelId: string; headers?: unknown };
-  }>;
-};
-
 export const aiml = {
-  image: (modelId: string): MinimalImageModel => ({
+  image: (modelId: string): any => ({
     modelId,
     provider: 'aiml',
     specificationVersion: 'v2',
@@ -110,6 +89,9 @@ export const aiml = {
     doGenerate: async (
       args: {
         prompt: string;
+        size?: string;
+        seed?: number;
+        providerOptions?: unknown;
         abortSignal?: AbortSignal;
         headers?: Record<string, string | undefined>;
       }
