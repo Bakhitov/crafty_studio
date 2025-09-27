@@ -1,0 +1,171 @@
+import { env } from '@/lib/env';
+
+const BASE_URL = 'https://api.aimlapi.com/v1/images/generations/';
+
+type AimlSuccessResponse = Record<string, unknown>;
+
+const extractCandidateStrings = (json: AimlSuccessResponse): string[] => {
+  const candidates: string[] = [];
+
+  const pushString = (v: unknown) => {
+    if (typeof v === 'string' && v.length > 0) candidates.push(v);
+  };
+
+  const pushFromObj = (obj: unknown) => {
+    if (!obj || typeof obj !== 'object') return;
+    const o = obj as Record<string, unknown>;
+    pushString(o['b64_json']);
+    pushString(o['url']);
+    pushString(o['image']);
+    pushString(o['image_url'] as unknown as string);
+    if (typeof o['data'] === 'string') pushString(o['data']);
+  };
+
+  const tryArray = (v: unknown) => {
+    if (Array.isArray(v)) {
+      for (const item of v) {
+        if (typeof item === 'string') pushString(item);
+        else pushFromObj(item);
+      }
+    }
+  };
+
+  // Common response patterns
+  pushFromObj(json['data']);
+  pushFromObj(json['result']);
+  pushFromObj(json['output']);
+
+  tryArray(json['data']);
+  tryArray(json['images']);
+  tryArray(json['output']);
+  tryArray(json['results']);
+
+  // Direct base64 fields sometimes present
+  pushString(json['b64_json']);
+  pushString(json['image_base64'] as unknown as string);
+  pushString(json['image'] as unknown as string);
+
+  return candidates.filter(Boolean);
+};
+
+const toUint8 = async (value: string): Promise<Uint8Array> => {
+  // If looks like a URL, fetch it
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    const res = await fetch(value);
+    const ab = await res.arrayBuffer();
+    return new Uint8Array(ab);
+  }
+
+  // If looks like a data URL, parse the base64 part
+  const commaIndex = value.indexOf(',');
+  const maybeDataPrefix = value.slice(0, Math.max(0, commaIndex));
+  const base64 = maybeDataPrefix.startsWith('data:') && commaIndex !== -1
+    ? value.slice(commaIndex + 1)
+    : value;
+
+  // Decode base64 safely across runtimes (browser/node)
+  if (typeof (globalThis as unknown as { atob?: (s: string) => string }).atob === 'function') {
+    const binaryString = (globalThis as unknown as { atob: (s: string) => string }).atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+    return bytes;
+  }
+
+  const maybeBuffer = (globalThis as unknown as { Buffer?: { from: (s: string, enc: string) => Uint8Array } }).Buffer;
+  if (maybeBuffer && typeof maybeBuffer.from === 'function') {
+    return new Uint8Array(maybeBuffer.from(base64, 'base64'));
+  }
+
+  throw new Error('No base64 decoder available in this runtime');
+};
+
+type MinimalImageModel = {
+  modelId: string;
+  provider?: string;
+  specificationVersion?: string;
+  maxImagesPerCall?: number;
+  doGenerate: (
+    args: {
+      prompt: string;
+      abortSignal?: AbortSignal;
+      headers?: Record<string, string | undefined>;
+      size?: string;
+      seed?: number;
+      providerOptions?: unknown;
+    }
+  ) => Promise<{
+    images: Uint8Array[];
+    warnings: string[];
+    response: { timestamp: Date; modelId: string; headers?: unknown };
+  }>;
+};
+
+export const aiml = {
+  image: (modelId: string): MinimalImageModel => ({
+    modelId,
+    provider: 'aiml',
+    specificationVersion: 'v2',
+    maxImagesPerCall: 1,
+    doGenerate: async (
+      args: {
+        prompt: string;
+        abortSignal?: AbortSignal;
+        headers?: Record<string, string | undefined>;
+      }
+    ) => {
+      const { prompt, abortSignal, headers } = args;
+      const res = await fetch(BASE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${env.AIML_API_KEY}`,
+          ...(headers ?? {}),
+        },
+        body: JSON.stringify({ model: modelId, prompt }),
+        signal: abortSignal,
+      });
+
+      if (!res.ok) {
+        let reason = '';
+        try {
+          reason = JSON.stringify(await res.json());
+        } catch {
+          reason = await res.text();
+        }
+        throw new Error(`AIML request failed (${res.status}): ${reason}`);
+      }
+
+      const json = (await res.json()) as AimlSuccessResponse;
+      const candidates = extractCandidateStrings(json);
+
+      if (!candidates.length) {
+        throw new Error('AIML response did not include image data');
+      }
+
+      const images: Uint8Array[] = [];
+      for (const c of candidates) {
+        try {
+          images.push(await toUint8(c));
+        } catch {
+          // skip unparsable entries
+        }
+      }
+
+      if (!images.length) {
+        throw new Error('AIML response contained no downloadable/decodable images');
+      }
+
+      return {
+        images: [images[0]],
+        warnings: [],
+        response: {
+          timestamp: new Date(),
+          modelId,
+          headers: undefined,
+        },
+      };
+    },
+  }),
+};
+

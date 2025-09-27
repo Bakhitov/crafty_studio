@@ -220,6 +220,11 @@ export const providers = {
     name: 'Novita',
     icon: NovitaIcon,
   },
+  aiml: {
+    id: 'aiml',
+    name: 'AIML API',
+    icon: UnknownIcon,
+  },
   ark: {
     id: 'ark',
     name: 'Ark',
