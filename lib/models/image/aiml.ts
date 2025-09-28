@@ -1,6 +1,6 @@
 import { env } from '@/lib/env';
 
-const BASE_URL = 'https://api.aimlapi.com/v1/images/generations/';
+const BASE_URL = 'https://api.aimlapi.com/v1/images/generations';
 
 type AimlSuccessResponse = Record<string, unknown>;
 
@@ -128,9 +128,8 @@ export const aiml = {
         if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
       }
 
-      if (imageUrl) body.image_url = imageUrl;
+      // Do not set generic image_url/image_urls; map per model below
       if (isQwenEdit && imageUrl) body.image = imageUrl;
-      if (imageUrls && imageUrls.length) body.image_urls = imageUrls;
 
       // Bytedance: Seedream 3.0 uses aspect_ratio (size deprecated)
       if (isSeedream3) {
@@ -207,6 +206,7 @@ export const aiml = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json',
           Authorization: `Bearer ${env.AIML_API_KEY}`,
           ...(headers ?? {}),
         },
