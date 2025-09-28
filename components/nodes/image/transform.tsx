@@ -173,16 +173,28 @@ export const ImageTransform = ({
   const toolbar = useMemo<ComponentProps<typeof NodeLayout>['toolbar']>(() => {
     const availableModels = Object.fromEntries(
       Object.entries(imageModels).map(([key, model]) => {
-        // Разрешаем выбирать любые модели.
-        // Для I2I запретим запускать generate позднее, если модель не поддерживает edit.
-        const shouldDisable = hasIncomingImageNodes ? !model.supportsEdit : false;
+        const chefId = model.chef.id;
+        const isArk = chefId === 'ark';
+        const isAiml = chefId === 'aiml';
+
+        // Доступны: Ark и AIML. Все прочие (не Ark и не AIML) — отключены.
+        const nonArkNonAimlDisabled = !isArk && !isAiml;
+
+        // Для I2I блокируем модели без supportsEdit
+        const i2iDisabled = hasIncomingImageNodes ? !model.supportsEdit : false;
+
+        const shouldDisable = nonArkNonAimlDisabled || i2iDisabled;
+
+        let label = model.label;
+        if (nonArkNonAimlDisabled) label = `${label} (недоступно)`;
+        else if (i2iDisabled) label = `${label} (не поддерживает i2i)`;
 
         return [
           key,
           {
             ...model,
             disabled: shouldDisable,
-            label: shouldDisable ? `${model.label} (не поддерживает i2i)` : model.label,
+            label,
           },
         ];
       })
