@@ -63,6 +63,9 @@ export const ImageTransform = ({
 }: ImageTransformProps) => {
   const { updateNodeData, getNodes, getEdges } = useReactFlow();
   const [loading, setLoading] = useState(false);
+  const [aimlModels, setAimlModels] = useState<
+    { id: string; name: string; developer: string }[]
+  >([]);
   const project = useProject();
   const hasIncomingImageNodes =
     getImagesFromImageNodes(getIncomers({ id }, getNodes(), getEdges()))
@@ -171,8 +174,8 @@ export const ImageTransform = ({
   ) => updateNodeData(id, { instructions: event.target.value });
 
   const toolbar = useMemo<ComponentProps<typeof NodeLayout>['toolbar']>(() => {
-    const availableModels = Object.fromEntries(
-      Object.entries(imageModels).map(([key, model]) => {
+    // Base static models
+    const baseEntries = Object.entries(imageModels).map(([key, model]) => {
         const chefId = model.chef.id;
         const isArk = chefId === 'ark';
         const isAiml = chefId === 'aiml';
@@ -189,16 +192,26 @@ export const ImageTransform = ({
         if (nonArkNonAimlDisabled) label = `${label} (недоступно)`;
         else if (i2iDisabled) label = `${label} (не поддерживает i2i)`;
 
-        return [
-          key,
-          {
-            ...model,
-            disabled: shouldDisable,
-            label,
-          },
-        ];
-      })
-    );
+        return [key, { ...model, disabled: shouldDisable, label }] as const;
+      });
+
+    // Dynamic AIML models from API
+    const dynamicAimlEntries = aimlModels.map((m) => {
+      const key = `aiml:${m.id}`;
+      const base = imageModels['aiml-flux-schnell'];
+      const disabled = hasIncomingImageNodes ? !(base?.supportsEdit ?? true) : false;
+      return [
+        key,
+        {
+          ...(base ?? { label: m.name, chef: { id: 'aiml', name: 'AIML', icon: () => null }, providers: [] as any }),
+          label: m.name,
+          // Группировка по developer будет обработана в ModelSelector через chef/id.
+          disabled,
+        },
+      ] as const;
+    });
+
+    const availableModels = Object.fromEntries([...baseEntries, ...dynamicAimlEntries]);
 
     const items: ComponentProps<typeof NodeLayout>['toolbar'] = [
       {
@@ -286,6 +299,7 @@ export const ImageTransform = ({
     data.updatedAt,
     handleGenerate,
     project?.id,
+    aimlModels,
   ]);
 
   const aspectRatio = useMemo(() => {
@@ -302,6 +316,32 @@ export const ImageTransform = ({
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Fetch AIML image models
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const res = await fetch('/api/aiml/models', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          data?: Array<{ id: string; type: string; info?: { developer?: string; name?: string } }>;
+        };
+        const list = (json.data ?? [])
+          .filter((m) => m.type === 'image')
+          .map((m) => ({
+            id: m.id,
+            name: m.info?.name ?? m.id,
+            developer: m.info?.developer ?? 'AIML',
+          }));
+        if (!cancelled) setAimlModels(list);
+      } catch {}
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const totalVersions = Array.isArray(data.versions) ? data.versions.length : 0;
