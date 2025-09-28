@@ -121,6 +121,9 @@ export const aiml = {
       const isSeedreamV4T2I = modelId.startsWith('bytedance/seedream-v4-text-to-image');
       const isSeedreamV4Edit = modelId.startsWith('bytedance/seedream-v4-edit');
       const isUSO = modelId.startsWith('bytedance/uso');
+      const isRecraftV3 = modelId.startsWith('recraft-v3');
+      const isStableV3Medium = modelId.startsWith('stable-diffusion-v3-medium');
+      const isStableV35Large = modelId.startsWith('stable-diffusion-v35-large');
 
       // Qwen base supports size; edit expects single image
       if (isQwenBase) {
@@ -170,7 +173,7 @@ export const aiml = {
         body.watermark = false;
       }
 
-      // Bytedance: v4 t2i/edit and USO use image_size and image_urls
+      // Helper: apply image_size from numeric size
       const applyImageSize = () => {
         if (typeof size === 'string' && size.includes('x')) {
           const [w, h] = size.split('x').map(Number);
@@ -180,6 +183,7 @@ export const aiml = {
         }
       };
 
+      // Bytedance: v4 t2i/edit and USO use image_size and image_urls
       if (isSeedreamV4T2I) {
         applyImageSize();
         if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
@@ -194,6 +198,18 @@ export const aiml = {
         applyImageSize();
         const urls = (imageUrls && imageUrls.length ? imageUrls : (imageUrl ? [imageUrl] : [])).slice(0, 3);
         if (urls.length) body.image_urls = urls;
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+
+      // Recraft v3: image_size (object or preset), seed
+      if (isRecraftV3) {
+        applyImageSize();
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+
+      // Stable Diffusion v3 Medium / v3.5 Large: image_size, seed
+      if (isStableV3Medium || isStableV35Large) {
+        applyImageSize();
         if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
       }
 
