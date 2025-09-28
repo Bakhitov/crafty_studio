@@ -16,7 +16,7 @@ export const runway = (modelId: 'gen4_turbo' | 'gen3a_turbo'): VideoModel => ({
       promptImage: imagePrompt,
       ratio: modelId === 'gen4_turbo' ? '1280:720' : '1280:768',
       promptText: prompt,
-      duration,
+      duration: (duration === 5 || duration === 10) ? duration : undefined,
     });
 
     const startTime = Date.now();
