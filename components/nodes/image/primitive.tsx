@@ -8,11 +8,22 @@ import { handleError } from '@/lib/error/handle';
 import { uploadFile } from '@/lib/upload';
 import { useProject } from '@/providers/project';
 import { useReactFlow } from '@xyflow/react';
-import { Loader2Icon } from 'lucide-react';
+import { Loader2Icon, DownloadIcon } from 'lucide-react';
 import Image from 'next/image';
+import { FiEdit2 } from 'react-icons/fi';
+import { download } from '@/lib/download';
 import { ImageZoom } from '@/components/ui/kibo-ui/image-zoom';
+import dynamic from 'next/dynamic';
+const ImageAnnotationViewer = dynamic<{ imageUrl: string; state: unknown }>(
+  () => import('@/components/ui/image-annotation-viewer').then((m) => m.ImageAnnotationViewer),
+  { ssr: false }
+);
 import { useState } from 'react';
 import type { ImageNodeProps } from '.';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+
+const ImageEditor = dynamic(() => import('@/components/ui/image-editor').then(m => m.ImageEditor), { ssr: false });
 
 type ImagePrimitiveProps = ImageNodeProps & {
   title: string;
@@ -25,9 +36,55 @@ export const ImagePrimitive = ({
   title,
 }: ImagePrimitiveProps) => {
   const { updateNodeData } = useReactFlow();
+  // Wire global events for overlay buttons
+  // Note: kept minimal; in future move to context or props
+  if (typeof window !== 'undefined') {
+    window.addEventListener('image-node:edit', (e: Event) => {
+      const detail = (e as CustomEvent).detail as { id: string } | undefined;
+      if (detail?.id !== id) return;
+      if (!data.content?.url) return;
+      // Trigger toolbar Edit logic
+      (async () => {
+        const div = document.createElement('div');
+        div.className = 'fixed inset-0 z-[200] bg-black/90';
+        document.body.appendChild(div);
+        const mount = document.createElement('div');
+        div.appendChild(mount);
+        const unmount = () => { try { document.body.removeChild(div); } catch {} };
+        const { default: React, useEffect: useEffectLocal } = await import('react');
+        const { createRoot } = await import('react-dom/client');
+        const Overlay = () => {
+          useEffectLocal(() => () => unmount(), []);
+          return (
+            <ImageEditor
+              imageUrl={data.content!.url}
+              onCancel={unmount}
+              onSave={async (file, state) => {
+                try {
+                  if (!project?.id) return;
+                  const { url, type } = await uploadFile(file, 'files');
+                  updateNodeData(id, { content: { url, type }, annotationState: state, updatedAt: new Date().toISOString() });
+                  if (typeof window !== 'undefined') window.dispatchEvent(new Event('user-files:changed'));
+                } finally { unmount(); }
+              }}
+            />
+          );
+        };
+        const root = createRoot(mount);
+        root.render(React.createElement(Overlay));
+      })();
+    }, { once: true });
+
+    window.addEventListener('image-node:delete', (e: Event) => {
+      const detail = (e as CustomEvent).detail as { id: string } | undefined;
+      if (detail?.id !== id) return;
+      // Simple delete via custom event: let canvas level handle real deletion; here noop
+    }, { once: true });
+  }
   const project = useProject();
   const [files, setFiles] = useState<File[] | undefined>();
   const [isUploading, setIsUploading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleDrop = async (files: File[]) => {
     if (isUploading || !project?.id) {
@@ -67,8 +124,69 @@ export const ImagePrimitive = ({
     }
   };
 
+  const toolbar = [
+    {
+      children: (
+        <Button
+          size="icon"
+          className="rounded-full"
+          disabled={!data.content?.url}
+          onClick={async () => {
+            // Открываем редактор UI напрямую на странице без модалки (полноэкранно)
+            if (!data.content?.url) return;
+            // Рендерим наш ImageEditor на отдельном фулскрин-оверлее
+            const div = document.createElement('div');
+            div.className = 'fixed inset-0 z-[200] bg-black/90';
+            document.body.appendChild(div);
+            const mount = document.createElement('div');
+            div.appendChild(mount);
+            const unmount = () => {
+              try { document.body.removeChild(div); } catch {}
+            };
+            const { createPortal } = await import('react-dom');
+            const { default: React, useEffect: useEffectLocal } = await import('react');
+            const Overlay = () => {
+              useEffectLocal(() => {
+                return () => { unmount(); };
+              }, []);
+              return (
+                <ImageEditor
+                  imageUrl={data.content!.url}
+                  onCancel={unmount}
+                  onSave={async (file, state) => {
+                    try {
+                      if (!project?.id) return;
+                      const { url, type } = await uploadFile(file, 'files');
+                      updateNodeData(id, {
+                        content: { url, type },
+                        annotationState: state,
+                        updatedAt: new Date().toISOString(),
+                      });
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new Event('user-files:changed'));
+                      }
+                    } catch (e) {
+                      handleError('Error saving edited image', e);
+                    } finally {
+                      unmount();
+                    }
+                  }}
+                />
+              );
+            };
+            const { createRoot } = await import('react-dom/client');
+            const root = createRoot(mount);
+            root.render(React.createElement(Overlay));
+          }}
+        >
+          <FiEdit2 className="size-3.5" />
+        </Button>
+      ),
+    },
+  ];
+
   return (
-    <NodeLayout id={id} data={data} type={type} title={title}>
+    <NodeLayout id={id} data={data} type={type} title={title} toolbar={toolbar}>
       {isUploading && (
         <Skeleton className="flex aspect-video w-full animate-pulse items-center justify-center">
           <Loader2Icon
@@ -78,15 +196,53 @@ export const ImagePrimitive = ({
         </Skeleton>
       )}
       {!isUploading && data.content && (
-        <ImageZoom>
-          <Image
-            src={data.content.url}
-            alt="Image"
-            width={data.width ?? 1000}
-            height={data.height ?? 1000}
-            className="h-auto w-full"
-          />
-        </ImageZoom>
+        <div className="relative group">
+          <ImageZoom>
+            <Image
+              src={data.content.url}
+              alt="Image"
+              width={data.width ?? 1000}
+              height={data.height ?? 1000}
+              className="h-auto w-full"
+              key={data.content.url}
+            />
+          </ImageZoom>
+          {/* overlay actions like gallery */}
+          <div className="pointer-events-none absolute right-2 top-2 z-10 flex gap-1 opacity-0 transition group-hover:opacity-100">
+            <button
+              type="button"
+              title="Скачать"
+              className="pointer-events-auto inline-flex items-center justify-center rounded-md bg-background/80 p-1.5 text-[11px] shadow hover:bg-background"
+              onClick={(e) => {
+                e.stopPropagation();
+                const name = 'image.png';
+                download({ url: data.content!.url, type: data.content!.type }, name, 'bin');
+              }}
+            >
+              <DownloadIcon className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              title="Редактировать"
+              className="pointer-events-auto inline-flex items-center justify-center rounded-md bg-background/80 p-1.5 text-[11px] shadow hover:bg-background"
+              onClick={(e) => {
+                e.stopPropagation();
+                const btn = document.createElement('button');
+                btn.click = () => {};
+                // Запускаем логику Edit из тулбара
+                const ev = new CustomEvent('image-node:edit', { detail: { id } });
+                window.dispatchEvent(ev);
+              }}
+            >
+              <FiEdit2 className="size-3.5" />
+            </button>
+          </div>
+          {Boolean((data as any)?.annotationState) && (
+            <div className="absolute inset-0 pointer-events-none">
+              <ImageAnnotationViewer imageUrl={data.content.url} state={(data as any).annotationState} />
+            </div>
+          )}
+        </div>
       )}
       {!isUploading && !data.content && (
         <Dropzone
@@ -106,6 +262,7 @@ export const ImagePrimitive = ({
           <DropzoneContent />
         </Dropzone>
       )}
+      {/* Убрали модалку: редактор запускается напрямую в фулскрине */}
     </NodeLayout>
   );
 };

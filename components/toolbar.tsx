@@ -7,6 +7,7 @@ import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { XIcon, FileIcon, DownloadIcon, Trash2Icon, CheckIcon } from 'lucide-react';
+import { FiEdit2 } from 'react-icons/fi';
 import { deleteUserFile } from '@/app/actions/image/delete-file';
 import Image from 'next/image';
 import { listUserFiles, type UserFile } from '@/app/actions/image/list-files';
@@ -16,6 +17,7 @@ import { download } from '@/lib/download';
 import { Dropzone, DropzoneContent, DropzoneEmptyState } from './ui/kibo-ui/dropzone';
 import { uploadFile } from '@/lib/upload';
 import { ImageZoom } from './ui/kibo-ui/image-zoom';
+import dynamic from 'next/dynamic';
 import { ProjectFloatingChat } from '@/components/project-floating-chat';
 import { ProjectSettings } from '@/components/project-settings';
 import { ProjectSelector } from '@/components/project-selector';
@@ -33,6 +35,8 @@ import {
   VideoPlayerVolumeRange,
 } from './ui/kibo-ui/video-player';
 
+const ImageEditor = dynamic(() => import('@/components/ui/image-editor').then(m => m.ImageEditor), { ssr: false });
+const ImageAnnotationViewer = dynamic(() => import('@/components/ui/image-annotation-viewer').then(m => m.ImageAnnotationViewer), { ssr: false });
 
 type ToolbarProps = {
   projectId?: string;
@@ -123,6 +127,7 @@ const GalleryButton = ({
   const [uploading, setUploading] = useState(false);
   // Image zoom handled via ImageZoom component
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const [editorFile, setEditorFile] = useState<UserFile | null>(null);
   const [activeTab, setActiveTab] = useState<'images' | 'videos' | 'audios' | 'files'>('images');
 
   useEffect(() => setMounted(true), []);
@@ -355,18 +360,24 @@ const GalleryButton = ({
                                     }}
                                   >
                                     {isImage && (
-                                      <ImageZoom className="absolute inset-0">
-                                        <Image
-                                          src={file.url}
-                                          alt={file.name}
-                                          fill
-                                          unoptimized
-                                          className="object-cover"
-                                          sizes={isVideo ? '280px' : '140px'}
-                                          quality={60}
-                                          loading="lazy"
-                                        />
-                                      </ImageZoom>
+                                      <>
+                                        <ImageZoom className="absolute inset-0">
+                                          <Image
+                                            src={file.url}
+                                            alt={file.name}
+                                            fill
+                                            unoptimized
+                                            className="object-cover"
+                                            sizes={isVideo ? '280px' : '140px'}
+                                            quality={60}
+                                            loading="lazy"
+                                          />
+                                        </ImageZoom>
+                                        {/* Annotation overlay if we decide to fetch state in the future */}
+                                        {/* <div className="absolute inset-0 pointer-events-none">
+                                          <ImageAnnotationViewer imageUrl={file.url} state={...} />
+                                        </div> */}
+                                      </>
                                     )}
                                     {isVideo && (
                                       <video
@@ -409,6 +420,19 @@ const GalleryButton = ({
                                       >
                                         <DownloadIcon className="size-3.5" />
                                       </button>
+                                      {isImage && (
+                                        <button
+                                          type="button"
+                                          title="Редактировать"
+                                          className="pointer-events-auto inline-flex items-center justify-center rounded-md bg-background/80 p-1.5 text-[11px] shadow hover:bg-background"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditorFile(file);
+                                          }}
+                                        >
+                                          <FiEdit2 className="size-3.5" />
+                                        </button>
+                                      )}
                                       <button
                                         type="button"
                                         title="Выбрать"
@@ -454,6 +478,47 @@ const GalleryButton = ({
         : null}
 
       {/* Image zoom is handled inline via ImageZoom component */}
+
+      {mounted && editorFile
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90"
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setEditorFile(null)}
+            >
+              <div
+                className="relative z-[121] h-[100vh] w-[100vw] bg-background"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ImageEditor
+                  imageUrl={editorFile.url}
+                  onCancel={() => setEditorFile(null)}
+                  onSave={async (file: File) => {
+                    try {
+                      await uploadFile(file, 'files');
+                      setEditorFile(null);
+                      // Refresh list inline
+                      setLoading(true);
+                      try {
+                        const res = await listUserFiles();
+                        if ('files' in res) setFiles(res.files);
+                      } finally {
+                        setLoading(false);
+                      }
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new Event('user-files:changed'));
+                      }
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }}
+                />
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
 
       {/* Fullscreen video preview */}
       {mounted && videoPreviewUrl
