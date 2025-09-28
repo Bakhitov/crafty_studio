@@ -13,6 +13,11 @@ import Image from 'next/image';
 import { ImageZoom } from '@/components/ui/kibo-ui/image-zoom';
 import { useState } from 'react';
 import type { ImageNodeProps } from '.';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import dynamic from 'next/dynamic';
+
+const ImageEditor = dynamic(() => import('@/components/ui/image-editor').then(m => m.ImageEditor), { ssr: false });
 
 type ImagePrimitiveProps = ImageNodeProps & {
   title: string;
@@ -28,6 +33,7 @@ export const ImagePrimitive = ({
   const project = useProject();
   const [files, setFiles] = useState<File[] | undefined>();
   const [isUploading, setIsUploading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleDrop = async (files: File[]) => {
     if (isUploading || !project?.id) {
@@ -67,8 +73,18 @@ export const ImagePrimitive = ({
     }
   };
 
+  const toolbar = [
+    {
+      children: (
+        <Button size="icon" className="rounded-full" disabled={!data.content?.url} onClick={() => setIsEditing(true)}>
+          Edit
+        </Button>
+      ),
+    },
+  ];
+
   return (
-    <NodeLayout id={id} data={data} type={type} title={title}>
+    <NodeLayout id={id} data={data} type={type} title={title} toolbar={toolbar}>
       {isUploading && (
         <Skeleton className="flex aspect-video w-full animate-pulse items-center justify-center">
           <Loader2Icon
@@ -106,6 +122,38 @@ export const ImagePrimitive = ({
           <DropzoneContent />
         </Dropzone>
       )}
+      <Dialog open={isEditing} onOpenChange={setIsEditing}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Редактирование изображения</DialogTitle>
+          </DialogHeader>
+          {data.content?.url ? (
+            <ImageEditor
+              imageUrl={data.content.url}
+              // @ts-expect-error unknown state stored in node data
+              initialState={data.annotationState}
+              onCancel={() => setIsEditing(false)}
+              onSave={async (file, state) => {
+                try {
+                  if (!project?.id) return;
+                  const { url, type } = await uploadFile(file, 'files');
+                  updateNodeData(id, {
+                    content: { url, type },
+                    annotationState: state,
+                    updatedAt: new Date().toISOString(),
+                  });
+                  setIsEditing(false);
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new Event('user-files:changed'));
+                  }
+                } catch (e) {
+                  handleError('Error saving edited image', e);
+                }
+              }}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </NodeLayout>
   );
 };

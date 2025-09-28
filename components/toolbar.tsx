@@ -16,6 +16,7 @@ import { download } from '@/lib/download';
 import { Dropzone, DropzoneContent, DropzoneEmptyState } from './ui/kibo-ui/dropzone';
 import { uploadFile } from '@/lib/upload';
 import { ImageZoom } from './ui/kibo-ui/image-zoom';
+import dynamic from 'next/dynamic';
 import { ProjectFloatingChat } from '@/components/project-floating-chat';
 import { ProjectSettings } from '@/components/project-settings';
 import { ProjectSelector } from '@/components/project-selector';
@@ -123,6 +124,7 @@ const GalleryButton = ({
   const [uploading, setUploading] = useState(false);
   // Image zoom handled via ImageZoom component
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const [editorFile, setEditorFile] = useState<UserFile | null>(null);
   const [activeTab, setActiveTab] = useState<'images' | 'videos' | 'audios' | 'files'>('images');
 
   useEffect(() => setMounted(true), []);
@@ -409,6 +411,19 @@ const GalleryButton = ({
                                       >
                                         <DownloadIcon className="size-3.5" />
                                       </button>
+                                      {isImage && (
+                                        <button
+                                          type="button"
+                                          title="Редактировать"
+                                          className="pointer-events-auto inline-flex items-center justify-center rounded-md bg-background/80 p-1.5 text-[11px] shadow hover:bg-background"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditorFile(file);
+                                          }}
+                                        >
+                                          Edit
+                                        </button>
+                                      )}
                                       <button
                                         type="button"
                                         title="Выбрать"
@@ -454,6 +469,58 @@ const GalleryButton = ({
         : null}
 
       {/* Image zoom is handled inline via ImageZoom component */}
+
+      {mounted && editorFile
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70"
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setEditorFile(null)}
+            >
+              <div
+                className="relative z-[121] w-full max-w-5xl rounded-xl bg-background p-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <h4 className="text-sm font-medium">Редактирование изображения</h4>
+                  <button
+                    type="button"
+                    aria-label="Close editor"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-secondary hover:bg-secondary/80"
+                    onClick={() => setEditorFile(null)}
+                  >
+                    <XIcon size={16} />
+                  </button>
+                </div>
+                <ImageEditor
+                  imageUrl={editorFile.url}
+                  onCancel={() => setEditorFile(null)}
+                  onSave={async (file) => {
+                    try {
+                      await uploadFile(file, 'files');
+                      setEditorFile(null);
+                      // Refresh list inline
+                      setLoading(true);
+                      try {
+                        const res = await listUserFiles();
+                        if ('files' in res) setFiles(res.files);
+                      } finally {
+                        setLoading(false);
+                      }
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new Event('user-files:changed'));
+                      }
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }}
+                />
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
 
       {/* Fullscreen video preview */}
       {mounted && videoPreviewUrl
