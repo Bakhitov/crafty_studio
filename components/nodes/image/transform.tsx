@@ -218,7 +218,7 @@ export const ImageTransform = ({
     const dynamicAimlEntries = aimlModels.map((m) => {
       const key = `aiml:${m.developer}:${m.id}`;
       const base = imageModels['aiml-flux-schnell'];
-      const isEditModel = m.id.includes('edit');
+      const isEditModel = m.id.includes('edit') || m.id.includes('/uso');
       const disabled = hasIncomingImageNodes ? !isEditModel : false;
       return [
         key,
