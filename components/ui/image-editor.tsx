@@ -91,20 +91,6 @@ export function ImageEditor({ imageUrl, initialState, onSave, onCancel, classNam
 				<div className="px-4 py-2 text-xs text-destructive">{error}</div>
 			) : null}
 			<div ref={containerRef} className="h-[100vh] w-[100vw] overflow-hidden" />
-			{/* Local close button as a fallback */}
-			<button
-				type="button"
-				className="fixed right-4 top-4 z-[200] inline-flex h-9 w-9 items-center justify-center rounded-full bg-secondary hover:bg-secondary/80"
-				onClick={onCancel}
-				aria-label="Close editor"
-			>
-				<span className="sr-only">Close</span>
-				{/* simplistic X */}
-				<div className="relative block h-3 w-3">
-					<div className="absolute left-1/2 top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-foreground" />
-					<div className="absolute left-1/2 top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-foreground" />
-				</div>
-			</button>
 		</div>
 	);
 }

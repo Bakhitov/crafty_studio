@@ -80,7 +80,58 @@ export const ImagePrimitive = ({
   const toolbar = [
     {
       children: (
-        <Button size="icon" className="rounded-full" disabled={!data.content?.url} onClick={() => setIsEditing(true)}>
+        <Button
+          size="icon"
+          className="rounded-full"
+          disabled={!data.content?.url}
+          onClick={async () => {
+            // Открываем редактор UI напрямую на странице без модалки (полноэкранно)
+            if (!data.content?.url) return;
+            // Рендерим наш ImageEditor на отдельном фулскрин-оверлее
+            const div = document.createElement('div');
+            div.className = 'fixed inset-0 z-[200] bg-black/90';
+            document.body.appendChild(div);
+            const mount = document.createElement('div');
+            div.appendChild(mount);
+            const unmount = () => {
+              try { document.body.removeChild(div); } catch {}
+            };
+            const { createPortal } = await import('react-dom');
+            const { default: React, useEffect: useEffectLocal } = await import('react');
+            const Overlay = () => {
+              useEffectLocal(() => {
+                return () => { unmount(); };
+              }, []);
+              return (
+                <ImageEditor
+                  imageUrl={data.content!.url}
+                  onCancel={unmount}
+                  onSave={async (file, state) => {
+                    try {
+                      if (!project?.id) return;
+                      const { url, type } = await uploadFile(file, 'files');
+                      updateNodeData(id, {
+                        content: { url, type },
+                        annotationState: state,
+                        updatedAt: new Date().toISOString(),
+                      });
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new Event('user-files:changed'));
+                      }
+                    } catch (e) {
+                      handleError('Error saving edited image', e);
+                    } finally {
+                      unmount();
+                    }
+                  }}
+                />
+              );
+            };
+            const { createRoot } = await import('react-dom/client');
+            const root = createRoot(mount);
+            root.render(React.createElement(Overlay));
+          }}
+        >
           Edit
         </Button>
       ),
@@ -133,38 +184,7 @@ export const ImagePrimitive = ({
           <DropzoneContent />
         </Dropzone>
       )}
-      <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent className="max-w-[100vw] h-[100vh] p-0">
-          <DialogHeader>
-            <DialogTitle className="sr-only">Редактирование изображения</DialogTitle>
-          </DialogHeader>
-          <div className="h-full w-full">
-            {data.content?.url ? (
-              <ImageEditor
-                imageUrl={data.content.url}
-                onCancel={() => setIsEditing(false)}
-                onSave={async (file, state) => {
-                  try {
-                    if (!project?.id) return;
-                    const { url, type } = await uploadFile(file, 'files');
-                    updateNodeData(id, {
-                      content: { url, type },
-                      annotationState: state,
-                      updatedAt: new Date().toISOString(),
-                    });
-                    setIsEditing(false);
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(new Event('user-files:changed'));
-                    }
-                  } catch (e) {
-                    handleError('Error saving edited image', e);
-                  }
-                }}
-              />
-            ) : null}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Убрали модалку: редактор запускается напрямую в фулскрине */}
     </NodeLayout>
   );
 };
