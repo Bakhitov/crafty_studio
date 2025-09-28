@@ -37,6 +37,7 @@ import {
   ZaiIcon,
   ArkIcon,
 } from './icons';
+import { MinimaxColorIcon, LumaColorIcon, RunwayColorIcon, ReplicateColorIcon, KlingColorIcon } from './icons-vendors';
 
 export type CraftyProvider = {
   id: string;
@@ -93,12 +94,12 @@ export const providers = {
   luma: {
     id: 'luma',
     name: 'Luma',
-    icon: LumaIcon,
+    icon: LumaColorIcon as unknown as typeof OpenAiIcon,
   },
   minimax: {
     id: 'minimax',
     name: 'Minimax',
-    icon: MinimaxIcon,
+    icon: MinimaxColorIcon as unknown as typeof OpenAiIcon,
   },
   hume: {
     id: 'hume',
@@ -128,7 +129,7 @@ export const providers = {
   runway: {
     id: 'runway',
     name: 'Runway',
-    icon: RunwayIcon,
+    icon: RunwayColorIcon as unknown as typeof OpenAiIcon,
   },
   together: {
     id: 'together',
@@ -173,12 +174,12 @@ export const providers = {
   kling: {
     id: 'kling',
     name: 'Kling',
-    icon: KlingIcon,
+    icon: KlingColorIcon as unknown as typeof OpenAiIcon,
   },
   replicate: {
     id: 'replicate',
     name: 'Replicate',
-    icon: ReplicateIcon,
+    icon: ReplicateColorIcon as unknown as typeof OpenAiIcon,
   },
   perplexity: {
     id: 'perplexity',
