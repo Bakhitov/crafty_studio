@@ -12,11 +12,9 @@ type ImageEditorProps = {
 
 export function ImageEditor({ imageUrl, initialState, onSave, onCancel, className }: ImageEditorProps) {
 	const containerRef = useRef<HTMLDivElement | null>(null);
-	const [ready, setReady] = useState(false);
-	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const objectUrlRef = useRef<string | null>(null);
-	const markerAreaRef = useRef<any>(null);
+	const editorRef = useRef<any>(null);
 	const targetImgRef = useRef<HTMLImageElement | null>(null);
 
 	const imgSrc = useMemo(() => imageUrl, [imageUrl]);
@@ -26,8 +24,7 @@ export function ImageEditor({ imageUrl, initialState, onSave, onCancel, classNam
 		(async () => {
 			try {
 				setError(null);
-				// Load marker.js lazily
-				const marker = await import('@markerjs/markerjs3');
+				const { AnnotationEditor } = await import('@markerjs/markerjs-ui');
 				if (cancelled) return;
 
 				// Prepare image element; fetch as blob to avoid CORS tainting
@@ -41,18 +38,36 @@ export function ImageEditor({ imageUrl, initialState, onSave, onCancel, classNam
 				img.alt = 'Editable image';
 				targetImgRef.current = img;
 
-				const area = new marker.MarkerArea();
-				markerAreaRef.current = area;
-				area.targetImage = img;
-
+				const editor = new AnnotationEditor();
+				editorRef.current = editor;
+				editor.targetImage = img;
+				// Mount editor UI
 				if (containerRef.current) {
 					containerRef.current.innerHTML = '';
-					containerRef.current.appendChild(area);
+					containerRef.current.appendChild(editor);
 				}
 
-				// Optionally, could restore previous annotation state here if API supports it.
+				// Load previous state if provided
+				if (initialState) {
+					try {
+						editor.show(initialState as never);
+					} catch {}
+				}
 
-				setReady(true);
+				// Wire save event
+				editor.addEventListener('editorsave', async (event: any) => {
+					try {
+						const dataUrl: string | undefined = event?.detail?.dataUrl;
+						const state = event?.detail?.state ?? {};
+						if (!dataUrl) return;
+						const res = await fetch(dataUrl);
+						const outBlob = await res.blob();
+						const file = new File([outBlob], `edited-${Date.now()}.png`, { type: 'image/png' });
+						await onSave(file, state);
+					} catch (e) {
+						setError((e as Error).message);
+					}
+				});
 			} catch (e) {
 				setError((e as Error).message);
 			}
@@ -60,101 +75,36 @@ export function ImageEditor({ imageUrl, initialState, onSave, onCancel, classNam
 		return () => {
 			cancelled = true;
 			try {
-				if (markerAreaRef.current && markerAreaRef.current.parentElement) {
-					markerAreaRef.current.parentElement.removeChild(markerAreaRef.current);
+				if (editorRef.current && editorRef.current.parentElement) {
+					editorRef.current.parentElement.removeChild(editorRef.current);
 				}
 			} catch {}
 			if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-			markerAreaRef.current = null;
+			editorRef.current = null;
 			targetImgRef.current = null;
 		};
-	}, [imgSrc, initialState]);
-
-	const handleSave = async () => {
-		if (!markerAreaRef.current || !targetImgRef.current || loading) return;
-		setLoading(true);
-		try {
-			const marker = await import('@markerjs/markerjs3');
-			const renderer = new marker.Renderer();
-			renderer.targetImage = targetImgRef.current;
-			const state = markerAreaRef.current.getState?.() ?? {};
-			const dataUrl = await renderer.rasterize(state);
-			const res = await fetch(dataUrl);
-			const blob = await res.blob();
-			const file = new File([blob], `edited-${Date.now()}.png`, { type: 'image/png' });
-			await onSave(file, state);
-		} catch (e) {
-			setError((e as Error).message);
-		} finally {
-			setLoading(false);
-		}
-	};
+	}, [imgSrc, initialState, onSave]);
 
 	return (
 		<div className={className}>
-			<div className="flex items-center justify-between gap-2 px-4 py-2 border-b">
-				<div className="flex items-center gap-2">
-					<span className="text-sm text-muted-foreground">Редактор изображения</span>
-					<div className="ml-4 flex items-center gap-1">
-						<button
-							type="button"
-							className="inline-flex h-8 items-center justify-center rounded-full bg-secondary px-3 text-xs"
-							onClick={() => markerAreaRef.current?.createMarker?.('RectangleMarker')}
-						>
-							Прямоугольник
-						</button>
-						<button
-							type="button"
-							className="inline-flex h-8 items-center justify-center rounded-full bg-secondary px-3 text-xs"
-							onClick={() => markerAreaRef.current?.createMarker?.('EllipseMarker')}
-						>
-							Эллипс
-						</button>
-						<button
-							type="button"
-							className="inline-flex h-8 items-center justify-center rounded-full bg-secondary px-3 text-xs"
-							onClick={() => markerAreaRef.current?.createMarker?.('ArrowMarker')}
-						>
-							Стрелка
-						</button>
-						<button
-							type="button"
-							className="inline-flex h-8 items-center justify-center rounded-full bg-secondary px-3 text-xs"
-							onClick={() => markerAreaRef.current?.createMarker?.('TextMarker')}
-						>
-							Текст
-						</button>
-						<button
-							type="button"
-							className="inline-flex h-8 items-center justify-center rounded-full bg-secondary px-3 text-xs"
-							onClick={() => markerAreaRef.current?.createMarker?.('FreehandMarker')}
-						>
-							Кисть
-						</button>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<button
-						type="button"
-						className="inline-flex h-8 items-center justify-center rounded-full bg-secondary px-3 text-xs"
-						onClick={onCancel}
-					>
-						Отмена
-					</button>
-					<button
-						type="button"
-						disabled={!ready || loading}
-						className="inline-flex h-8 items-center justify-center rounded-full bg-primary px-3 text-xs text-primary-foreground disabled:opacity-50"
-						onClick={handleSave}
-					>
-						{loading ? 'Сохраняем…' : 'Сохранить'}
-					</button>
-				</div>
-			</div>
 			{error ? (
 				<div className="px-4 py-2 text-xs text-destructive">{error}</div>
 			) : null}
-			<div ref={containerRef} className="h-[calc(100vh-56px)] w-full overflow-hidden" />
+			<div ref={containerRef} className="h-[100vh] w-[100vw] overflow-hidden" />
+			{/* Local close button as a fallback */}
+			<button
+				type="button"
+				className="fixed right-4 top-4 z-[200] inline-flex h-9 w-9 items-center justify-center rounded-full bg-secondary hover:bg-secondary/80"
+				onClick={onCancel}
+				aria-label="Close editor"
+			>
+				<span className="sr-only">Close</span>
+				{/* simplistic X */}
+				<div className="relative block h-3 w-3">
+					<div className="absolute left-1/2 top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-foreground" />
+					<div className="absolute left-1/2 top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-foreground" />
+				</div>
+			</button>
 		</div>
 	);
 }
