@@ -9,6 +9,7 @@ import { ark as arkVideo } from './ark';
 import { minimax } from './minimax';
 import { replicate } from './replicate';
 import { runway } from './runway';
+import { aimlVideo } from './aiml';
 
 const million = 1000000;
 
@@ -30,6 +31,18 @@ export type CraftyVideoModel = CraftyModel & {
 };
 
 export const videoModels: Record<string, CraftyVideoModel> = {
+  'aiml-minimax-video-01': {
+    label: 'AIML MiniMax Video-01 (I2V)',
+    chef: providers.aiml,
+    providers: [
+      {
+        ...providers.aiml,
+        model: aimlVideo('video-01'),
+        // Pricing unknown; set to 0 for now. Adjust when known.
+        getCost: () => 0,
+      },
+    ],
+  },
   'seedance-1-0-lite-t2v-250428': {
     label: 'Seedance 1.0 Lite (T2V)',
     chef: providers.ark,
