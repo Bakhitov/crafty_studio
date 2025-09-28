@@ -156,13 +156,20 @@ export const ModelSelector = ({
 
   const groupedOptions = Object.entries(options).reduce(
     (acc, [id, model]) => {
-      const chef = model.chef.id;
-
-      if (!acc[chef]) {
-        acc[chef] = {};
+      // Группа по developer для динамических AIML-моделей: id формата "aiml:<developer>:<modelId>"
+      let groupKey = model.chef.id;
+      if (id.startsWith('aiml:')) {
+        const parts = id.split(':');
+        if (parts.length >= 3) {
+          groupKey = parts[1];
+        }
       }
 
-      acc[chef][id] = model;
+      if (!acc[groupKey]) {
+        acc[groupKey] = {};
+      }
+
+      acc[groupKey][id] = model;
       return acc;
     },
     {} as Record<string, Record<string, CraftyModel>>
@@ -208,18 +215,18 @@ export const ModelSelector = ({
           <CommandList>
             <CommandEmpty />
             {sortedChefs.map((chef) => (
-              <CommandGroup
-                key={chef}
-                heading={
-                  <CommandGroupHeading
-                    data={
-                      chef in providers
-                        ? providers[chef as keyof typeof providers]
-                        : providers.unknown
-                    }
-                  />
-                }
-              >
+            <CommandGroup
+              key={chef}
+              heading={
+                <CommandGroupHeading
+                  data={
+                    chef in providers
+                      ? providers[chef as keyof typeof providers]
+                      : { id: chef, name: chef, icon: providers.unknown.icon }
+                  }
+                />
+              }
+            >
                 {Object.entries(groupedOptions[chef]).map(([id, model]) => (
                   <CommandItem
                     key={id}

@@ -11,6 +11,7 @@ import type { ImageModel } from 'ai';
 import { AmazonBedrockIcon, GrokIcon } from '../../icons';
 import { blackForestLabs } from './black-forest-labs';
 import { ark } from './ark';
+import { aiml } from './aiml';
 
 const million = 1000000;
 
@@ -32,6 +33,20 @@ type CraftyImageModel = CraftyModel & {
 };
 
 export const imageModels: Record<string, CraftyImageModel> = {
+  'aiml-flux-schnell': {
+    label: 'FLUX Schnell (AIML)',
+    chef: providers.aiml,
+    providers: [
+      {
+        ...providers.aiml,
+        model: aiml.image('flux/schnell'),
+        // Pricing unknown publicly; treat as low fixed cost
+        getCost: () => 0.02,
+      },
+    ],
+    supportsEdit: true,
+    priceIndicator: 'low',
+  },
   'seedream-4-0-250828': {
     label: 'Seedream 4.0',
     chef: providers.ark,
