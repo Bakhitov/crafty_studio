@@ -183,7 +183,19 @@ export const VideoTransform = ({
         <ModelSelector
           value={modelId}
           options={useMemo(() => {
-            const baseEntries = Object.entries(videoModels).map(([key, model]) => [key, model] as const);
+            const baseEntries = Object.entries(videoModels).map(([key, model]) => {
+              const isArk = model.chef.id === 'ark';
+              const isAiml = model.chef.id === 'aiml';
+              const disabled = !isArk && !isAiml;
+              return [
+                key,
+                {
+                  ...model,
+                  disabled,
+                  label: disabled ? `${model.label} (скоро)` : model.label,
+                },
+              ] as const;
+            });
 
             const dynamicAiml = aimlVideoModels.map((m) => {
               const key = `aiml:${m.developer}:${m.id}`;
