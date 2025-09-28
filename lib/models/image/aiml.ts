@@ -96,7 +96,26 @@ export const aiml = {
         headers?: Record<string, string | undefined>;
       }
     ) => {
-      const { prompt, abortSignal, headers } = args;
+      const { prompt, providerOptions, abortSignal, headers } = args;
+      // Prepare payload with optional image_url(s) if provided via providerOptions
+      let imageUrl: string | undefined;
+      let imageUrls: string[] | undefined;
+      if (
+        providerOptions &&
+        typeof providerOptions === 'object' &&
+        'aiml' in (providerOptions as Record<string, unknown>)
+      ) {
+        const aimlOpts = (providerOptions as { aiml?: { image_url?: string; image_urls?: string[] } }).aiml;
+        if (aimlOpts) {
+          if (typeof aimlOpts.image_url === 'string') imageUrl = aimlOpts.image_url;
+          if (Array.isArray(aimlOpts.image_urls)) imageUrls = aimlOpts.image_urls.filter((u) => typeof u === 'string');
+        }
+      }
+
+      const body: Record<string, unknown> = { model: modelId, prompt };
+      if (imageUrl) body.image_url = imageUrl;
+      if (imageUrls && imageUrls.length) body.image_urls = imageUrls;
+
       const res = await fetch(BASE_URL, {
         method: 'POST',
         headers: {
@@ -104,7 +123,7 @@ export const aiml = {
           Authorization: `Bearer ${env.AIML_API_KEY}`,
           ...(headers ?? {}),
         },
-        body: JSON.stringify({ model: modelId, prompt }),
+        body: JSON.stringify(body),
         signal: abortSignal,
       });
 

@@ -177,6 +177,13 @@ export const editImageAction = async ({
           .then((buffer) => Buffer.from(buffer).toString('base64'));
 
         providerOptions = { bfl: { image: base64First } } as const;
+      } else if (providerName === 'aiml') {
+        // AIML accepts image_url for single and image_urls for multiple
+        if (images.length === 1) {
+          providerOptions = { aiml: { image_url: images[0].url } } as const;
+        } else if (images.length > 1) {
+          providerOptions = { aiml: { image_urls: images.map((img) => img.url) } } as const;
+        }
       }
 
       const arkModelId = (provider.model as { modelId?: string }).modelId ?? '';

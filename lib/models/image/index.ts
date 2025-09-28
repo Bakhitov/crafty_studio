@@ -44,7 +44,7 @@ export const imageModels: Record<string, CraftyImageModel> = {
         getCost: () => 0.02,
       },
     ],
-    supportsEdit: false,
+    supportsEdit: true,
     priceIndicator: 'low',
   },
   'seedream-4-0-250828': {
