@@ -25,6 +25,7 @@ type GenerateImageActionProps = {
   modelId: string;
   instructions?: string;
   size?: string;
+  seed?: number;
 };
 
 const generateGptImage1Image = async ({
@@ -89,6 +90,7 @@ export const generateImageAction = async ({
   nodeId,
   projectId,
   size,
+  seed,
 }: GenerateImageActionProps): Promise<
   | {
       nodeData: object;
@@ -170,6 +172,7 @@ export const generateImageAction = async ({
         ].join('\n'),
         size: (isArk3 ? undefined : (size as never)) as never,
         aspectRatio: isArk3 ? undefined : aspectRatio,
+        seed: seed as never,
         providerOptions: providerOptions as never,
       });
 

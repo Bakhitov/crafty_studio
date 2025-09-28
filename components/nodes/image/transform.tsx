@@ -20,7 +20,10 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   DownloadIcon,
+  HelpCircleIcon,
+  X as XSmallIcon,
 } from 'lucide-react';
+import { FaRandom } from 'react-icons/fa';
 import Image from 'next/image';
 import { ImageZoom } from '@/components/ui/kibo-ui/image-zoom';
 import {
@@ -37,6 +40,8 @@ import { mutate } from 'swr';
 import type { ImageNodeProps } from '.';
 import { ModelSelector } from '../model-selector';
 import { ImageSizeSelector } from './image-size-selector';
+import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 type ImageTransformProps = ImageNodeProps & {
@@ -74,6 +79,17 @@ export const ImageTransform = ({
   const analytics = useAnalytics();
   const selectedModel = imageModels[modelId];
   const size = data.size ?? selectedModel?.sizes?.at(0);
+
+  // Ensure default size 1024x1024 when supported
+  useEffect(() => {
+    const availableSizes = selectedModel?.sizes ?? [];
+    if (!availableSizes.length) return;
+    const has1024 = availableSizes.includes('1024x1024' as never);
+    const current = data.size;
+    if (!current && has1024) {
+      updateNodeData(id, { size: '1024x1024' });
+    }
+  }, [selectedModel?.sizes, data.size, id, updateNodeData]);
 
   const handleGenerate = useCallback(async () => {
     if (loading || !project?.id) {
@@ -127,6 +143,7 @@ export const ImageTransform = ({
             projectId: project.id,
             modelId,
             size,
+            seed: data.seed,
           })
         : await generateImageAction({
             prompt: textNodes.join('\n'),
@@ -135,6 +152,7 @@ export const ImageTransform = ({
             projectId: project.id,
             nodeId: id,
             size,
+            seed: data.seed,
           });
 
       if ('error' in response) {
@@ -142,6 +160,9 @@ export const ImageTransform = ({
       }
 
       updateNodeData(id, response.nodeData);
+
+      // Delay hiding loader to avoid showing previous image for a frame
+      setTimeout(() => setLoading(false), 50);
 
       toast.success('Image generated successfully');
 
@@ -152,7 +173,6 @@ export const ImageTransform = ({
       }
     } catch (error) {
       handleError('Error generating image', error);
-    } finally {
       setLoading(false);
     }
   }, [
@@ -167,6 +187,7 @@ export const ImageTransform = ({
     modelId,
     getNodes,
     updateNodeData,
+    data.seed,
   ]);
 
   const handleInstructionsChange: ChangeEventHandler<HTMLTextAreaElement> = (
@@ -199,7 +220,8 @@ export const ImageTransform = ({
     const dynamicAimlEntries = aimlModels.map((m) => {
       const key = `aiml:${m.developer}:${m.id}`;
       const base = imageModels['aiml-flux-schnell'];
-      const disabled = hasIncomingImageNodes ? !(base?.supportsEdit ?? true) : false;
+      const supportsI2I = m.id.includes('edit') || m.id.includes('/uso') || m.id.includes('image-to-image');
+      const disabled = hasIncomingImageNodes ? !supportsI2I : false;
       return [
         key,
         {
@@ -227,12 +249,26 @@ export const ImageTransform = ({
       },
     ];
 
-    if (selectedModel?.sizes?.length) {
+    // Decide size options: use model sizes or fallback for AIML dynamic
+    const isDynamicAimlSelected = typeof modelId === 'string' && modelId.startsWith('aiml:');
+    const dynamicId = isDynamicAimlSelected ? modelId.split(':').slice(-1)[0] : '';
+    const dynIsBytedanceV4 = isDynamicAimlSelected && (dynamicId.startsWith('bytedance/seedream-v4-text-to-image') || dynamicId.startsWith('bytedance/seedream-v4-edit'));
+    const dynIsUSO = isDynamicAimlSelected && dynamicId.startsWith('bytedance/uso');
+    const dynamicNeedsPresets = dynIsBytedanceV4 || dynIsUSO;
+    const sizeOptions = selectedModel?.sizes && selectedModel.sizes.length
+      ? selectedModel.sizes
+      : (isDynamicAimlSelected && dynamicNeedsPresets
+          ? ['1024x1024', '1024x1536', '1536x1024', '1024x768', '768x1024']
+          : (isDynamicAimlSelected && !dynamicNeedsPresets
+              ? ['1024x1024', '1024x1536', '1536x1024', '1024x768', '768x1024']
+              : []));
+
+    if (sizeOptions.length) {
       items.push({
         children: (
           <ImageSizeSelector
             value={size ?? ''}
-            options={selectedModel?.sizes ?? []}
+            options={sizeOptions}
             id={id}
             className="w-[200px] rounded-full"
             onChange={(value) => updateNodeData(id, { size: value })}
@@ -240,6 +276,32 @@ export const ImageTransform = ({
         ),
       });
     }
+
+    // Seed input simplified (no random/clear buttons)
+    items.push({
+      children: (
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-xs text-muted-foreground">Зерно</span>
+            </TooltipTrigger>
+            <TooltipContent>Фиксированное зерно даёт повторяемый результат.</TooltipContent>
+          </Tooltip>
+          <Input
+            value={typeof data.seed === 'number' ? String(data.seed) : ''}
+            onChange={(e) => {
+              const raw = e.target.value.trim();
+              const next = raw === '' ? undefined : Number(raw);
+              updateNodeData(id, { seed: Number.isFinite(next as number) ? next : undefined });
+            }}
+            placeholder="случайно"
+            className="w-[120px] rounded-full"
+            type="number"
+            min={1}
+          />
+        </div>
+      ),
+    });
 
     items.push(
       loading
@@ -300,6 +362,7 @@ export const ImageTransform = ({
     handleGenerate,
     project?.id,
     aimlModels,
+    data.seed,
   ]);
 
   const aspectRatio = useMemo(() => {
@@ -388,6 +451,11 @@ export const ImageTransform = ({
     ) : null
   );
 
+  const displayedUrl = useMemo(() => {
+    const byIndex = Array.isArray(data.versions) ? data.versions[currentIndex]?.url : undefined;
+    return byIndex ?? data.generated?.url;
+  }, [data.versions, currentIndex, data.generated?.url]);
+
   return (
     <NodeLayout id={id} data={data} type={type} title={title} toolbar={toolbar} topCenter={topCenter}>
       {loading && (
@@ -401,7 +469,7 @@ export const ImageTransform = ({
           />
         </Skeleton>
       )}
-      {!loading && !data.generated?.url && (
+      {!loading && !displayedUrl && (
         <div
           className="flex w-full items-center justify-center rounded-b-xl bg-secondary p-4"
           style={{ aspectRatio }}
@@ -412,10 +480,10 @@ export const ImageTransform = ({
           </p>
         </div>
       )}
-      {!loading && data.generated?.url && (
+      {!loading && displayedUrl && (
         <ImageZoom>
           <Image
-            src={data.generated.url}
+            src={displayedUrl}
             alt="Generated image"
             width={1000}
             height={1000}

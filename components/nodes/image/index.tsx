@@ -27,6 +27,7 @@ export type ImageNodeProps = {
     model?: string;
     description?: string;
     instructions?: string;
+    seed?: number;
   };
   id: string;
 };
