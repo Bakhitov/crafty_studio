@@ -1,11 +1,12 @@
 import type { PriceBracket } from '@/providers/gateway/client';
 import { BlackForestLabsIcon, HumeIcon, LmntIcon, MoonshotAiIcon, MorphIcon, InceptionIcon, OpenAiIcon, UnknownIcon, ArkIcon } from './icons';
-import { BasetenIcon, CerebrasIcon, DeepinfraIcon, FalIcon, NovitaIcon, VercelIcon } from './icons';
+import { BasetenIcon, CerebrasIcon, DeepinfraIcon, FalIcon, NovitaIcon } from './icons';
 import {
   AlibabaCloudColorIcon,
   AmazonColorIcon,
   AzureColorIcon,
   BedrockColorIcon,
+  AnthropicColorIcon,
   MinimaxColorIcon,
   LumaColorIcon,
   RunwayColorIcon,
@@ -14,7 +15,7 @@ import {
   CohereColorIcon,
   DeepseekColorIcon,
   GroqColorIcon,
-  GoogleColorIcon,
+  GeminiColorIcon,
   MetaColorIcon,
   XaiColorIcon,
   TogetherColorIcon,
@@ -23,6 +24,8 @@ import {
   ZaiColorIcon,
   MistralColorIcon,
   FireworksColorIcon,
+  VercelColorIcon,
+  BytedanceColorIcon,
 } from './icons-vendors';
 import { MinimaxColorIcon, LumaColorIcon, RunwayColorIcon, ReplicateColorIcon, KlingColorIcon } from './icons-vendors';
 
@@ -41,12 +44,12 @@ export const providers = {
   anthropic: {
     id: 'anthropic',
     name: 'Anthropic',
-    icon: AnthropicIcon,
+    icon: AnthropicColorIcon as unknown as typeof OpenAiIcon,
   },
   google: {
     id: 'google',
     name: 'Google',
-    icon: GoogleColorIcon as unknown as typeof OpenAiIcon,
+    icon: GeminiColorIcon as unknown as typeof OpenAiIcon,
   },
   vertex: {
     id: 'vertex',
@@ -66,7 +69,7 @@ export const providers = {
   vercel: {
     id: 'vercel',
     name: 'Vercel',
-    icon: VercelIcon,
+    icon: VercelColorIcon as unknown as typeof OpenAiIcon,
   },
   groq: {
     id: 'groq',
@@ -216,7 +219,7 @@ export const providers = {
   ark: {
     id: 'ark',
     name: 'Ark',
-    icon: ArkIcon,
+    icon: BytedanceColorIcon as unknown as typeof OpenAiIcon,
   },
   unknown: {
     id: 'unknown',
