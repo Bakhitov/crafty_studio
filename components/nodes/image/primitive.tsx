@@ -12,12 +12,14 @@ import { Loader2Icon } from 'lucide-react';
 import Image from 'next/image';
 import { ImageZoom } from '@/components/ui/kibo-ui/image-zoom';
 import dynamic from 'next/dynamic';
-const ImageAnnotationViewer = dynamic(() => import('@/components/ui/image-annotation-viewer').then(m => m.ImageAnnotationViewer), { ssr: false });
+const ImageAnnotationViewer = dynamic<{ imageUrl: string; state: unknown }>(
+  () => import('@/components/ui/image-annotation-viewer').then((m) => m.ImageAnnotationViewer),
+  { ssr: false }
+);
 import { useState } from 'react';
 import type { ImageNodeProps } from '.';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import dynamic from 'next/dynamic';
 
 const ImageEditor = dynamic(() => import('@/components/ui/image-editor').then(m => m.ImageEditor), { ssr: false });
 
