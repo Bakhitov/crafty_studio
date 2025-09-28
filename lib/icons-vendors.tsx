@@ -31,4 +31,5 @@ export const MistralColorIcon = makeAssetIcon('/demo/logoSVG/mistral-color.svg',
 export const FireworksColorIcon = makeAssetIcon('/demo/logoSVG/fireworks-color.svg', 'Fireworks');
 export const VercelColorIcon = makeAssetIcon('/demo/logoSVG/vercel.svg', 'Vercel');
 export const BytedanceColorIcon = makeAssetIcon('/demo/logoSVG/bytedance-color (1).svg', 'ByteDance');
+export const FalColorIcon = makeAssetIcon('/demo/logoSVG/fal-color.svg', 'Fal');
 

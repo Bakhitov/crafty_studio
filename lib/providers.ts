@@ -1,6 +1,6 @@
 import type { PriceBracket } from '@/providers/gateway/client';
 import { BlackForestLabsIcon, HumeIcon, LmntIcon, MoonshotAiIcon, MorphIcon, InceptionIcon, OpenAiIcon, UnknownIcon, ArkIcon } from './icons';
-import { BasetenIcon, CerebrasIcon, DeepinfraIcon, FalIcon, NovitaIcon } from './icons';
+import { BasetenIcon, CerebrasIcon, DeepinfraIcon, NovitaIcon } from './icons';
 import {
   AlibabaCloudColorIcon,
   AmazonColorIcon,
@@ -26,6 +26,7 @@ import {
   FireworksColorIcon,
   VercelColorIcon,
   BytedanceColorIcon,
+  FalColorIcon,
 } from './icons-vendors';
 import { MinimaxColorIcon, LumaColorIcon, RunwayColorIcon, ReplicateColorIcon, KlingColorIcon } from './icons-vendors';
 
@@ -154,7 +155,7 @@ export const providers = {
   fal: {
     id: 'fal',
     name: 'Fal',
-    icon: FalIcon,
+    icon: FalColorIcon as unknown as typeof OpenAiIcon,
   },
   fireworks: {
     id: 'fireworks',
