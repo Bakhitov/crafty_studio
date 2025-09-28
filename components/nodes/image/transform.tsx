@@ -220,8 +220,8 @@ export const ImageTransform = ({
     const dynamicAimlEntries = aimlModels.map((m) => {
       const key = `aiml:${m.developer}:${m.id}`;
       const base = imageModels['aiml-flux-schnell'];
-      const isEditModel = m.id.includes('edit') || m.id.includes('/uso');
-      const disabled = hasIncomingImageNodes ? !isEditModel : false;
+      const supportsI2I = m.id.includes('edit') || m.id.includes('/uso') || m.id.includes('image-to-image');
+      const disabled = hasIncomingImageNodes ? !supportsI2I : false;
       return [
         key,
         {
