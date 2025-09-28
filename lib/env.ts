@@ -43,6 +43,7 @@ export const env = createEnv({
     LUMA_API_KEY: z.string().min(1).startsWith('luma-'),
     BF_API_KEY: z.string().min(1),
     ARK_API_KEY: z.string().min(1),
+    AIML_API_KEY: z.string().min(1),
 
     // Vercel AI Gateway
     AI_GATEWAY_API_KEY: z.string().min(1),
@@ -89,6 +90,7 @@ export const env = createEnv({
     LMNT_API_KEY: process.env.LMNT_API_KEY,
     BF_API_KEY: process.env.BF_API_KEY,
     ARK_API_KEY: process.env.ARK_API_KEY,
+    AIML_API_KEY: process.env.AIML_API_KEY,
     AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
   },
 });

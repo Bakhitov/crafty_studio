@@ -220,6 +220,11 @@ export const providers = {
     name: 'Novita',
     icon: NovitaIcon,
   },
+  aiml: {
+    id: 'aiml',
+    name: 'AIML API',
+    icon: UnknownIcon,
+  },
   ark: {
     id: 'ark',
     name: 'Ark',
@@ -242,4 +247,19 @@ export type CraftyModel = {
   priceIndicator?: PriceBracket;
   disabled?: boolean;
   default?: boolean;
+};
+
+export const developerIcons: Record<string, typeof OpenAiIcon> = {
+  google: GoogleIcon,
+  openai: OpenAiIcon,
+  anthropic: AnthropicIcon,
+  meta: MetaIcon,
+  cohere: CohereIcon,
+  mistral: MistralIcon,
+  flux: BlackForestLabsIcon,
+  bytedance: ArkIcon,
+  stabilityai: UnknownIcon,
+  recraftai: UnknownIcon,
+  tripoai: UnknownIcon,
+  alibabacloud: AlibabaCloudIcon,
 };

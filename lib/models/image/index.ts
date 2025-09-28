@@ -11,6 +11,7 @@ import type { ImageModel } from 'ai';
 import { AmazonBedrockIcon, GrokIcon } from '../../icons';
 import { blackForestLabs } from './black-forest-labs';
 import { ark } from './ark';
+import { aiml } from './aiml';
 
 const million = 1000000;
 

@@ -8,6 +8,7 @@ import {
 import {
   type CraftyModel,
   type CraftyProvider,
+  developerIcons,
   providers,
 } from '@/lib/providers';
 import { cn } from '@/lib/utils';
@@ -129,10 +130,10 @@ const ModelIcon = ({
   className?: string;
 }) => {
   if (data.icon) {
-    return <data.icon className={cn('size-4 shrink-0', className)} />;
+    return <data.icon className={cn('size-3.5 shrink-0', className)} />;
   }
 
-  return <chef.icon className={cn('size-4 shrink-0', className)} />;
+  return <chef.icon className={cn('size-3.5 shrink-0', className)} />;
 };
 
 export const ModelSelector = ({
@@ -156,28 +157,44 @@ export const ModelSelector = ({
 
   const groupedOptions = Object.entries(options).reduce(
     (acc, [id, model]) => {
-      const chef = model.chef.id;
-
-      if (!acc[chef]) {
-        acc[chef] = {};
+      // Группа по developer для динамических AIML-моделей: id формата "aiml:<developer>:<modelId>"
+      let groupKey = model.chef.id;
+      if (id.startsWith('aiml:')) {
+        const parts = id.split(':');
+        if (parts.length >= 3) {
+          groupKey = parts[1];
+        }
       }
 
-      acc[chef][id] = model;
+      if (!acc[groupKey]) {
+        acc[groupKey] = {};
+      }
+
+      acc[groupKey][id] = model;
       return acc;
     },
     {} as Record<string, Record<string, CraftyModel>>
   );
 
-  const sortedChefs = Object.keys(groupedOptions).sort((a, b) => {
-    const aName = Object.values(providers)
-      .find((provider) => provider.id === a)
-      ?.name.toLowerCase();
-    const bName = Object.values(providers)
-      .find((provider) => provider.id === b)
-      ?.name.toLowerCase();
+  const sortedChefs = Object.keys(groupedOptions)
+    .filter((chef) => {
+      const modelsInGroup = Object.values(groupedOptions[chef]);
+      const isArkGroup = chef.toLowerCase() === 'ark';
+      const isAimlGroup = modelsInGroup.some(
+        (model) => model.chef.id.toLowerCase() === 'aiml'
+      );
+      return isArkGroup || isAimlGroup;
+    })
+    .sort((a, b) => {
+      const aName = Object.values(providers)
+        .find((provider) => provider.id === a)
+        ?.name.toLowerCase();
+      const bName = Object.values(providers)
+        .find((provider) => provider.id === b)
+        ?.name.toLowerCase();
 
-    return aName?.localeCompare(bName ?? '') ?? 0;
-  });
+      return aName?.localeCompare(bName ?? '') ?? 0;
+    });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -208,18 +225,25 @@ export const ModelSelector = ({
           <CommandList>
             <CommandEmpty />
             {sortedChefs.map((chef) => (
-              <CommandGroup
-                key={chef}
-                heading={
-                  <CommandGroupHeading
-                    data={
-                      chef in providers
-                        ? providers[chef as keyof typeof providers]
-                        : providers.unknown
-                    }
-                  />
-                }
-              >
+            <CommandGroup
+              key={chef}
+              heading={
+                <CommandGroupHeading
+                  data={
+                    chef in providers
+                      ? providers[chef as keyof typeof providers]
+                      : {
+                          id: chef,
+                          name: chef,
+                          icon:
+                            developerIcons[
+                              chef.toLowerCase().replace(/\s+/g, '')
+                            ] ?? providers.unknown.icon,
+                        }
+                  }
+                />
+              }
+            >
                 {Object.entries(groupedOptions[chef]).map(([id, model]) => (
                   <CommandItem
                     key={id}
@@ -240,7 +264,14 @@ export const ModelSelector = ({
                         chef={
                           chef in providers
                             ? providers[chef as keyof typeof providers]
-                            : providers.unknown
+                            : {
+                                id: chef,
+                                name: chef,
+                                icon:
+                                  developerIcons[
+                                    chef.toLowerCase().replace(/\s+/g, '')
+                                  ] ?? providers.unknown.icon,
+                              }
                         }
                         className={
                           value === id ? 'text-primary-foreground' : ''
@@ -255,7 +286,7 @@ export const ModelSelector = ({
                       >
                         <div
                           className={cn(
-                            'flex size-4 items-center justify-center rounded-full bg-secondary',
+                            'flex size-3 items-center justify-center rounded-full bg-secondary',
                             value === id && 'bg-primary-foreground/10'
                           )}
                         >

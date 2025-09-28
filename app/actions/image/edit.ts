@@ -102,7 +102,20 @@ export const editImageAction = async ({
     const client = await createClient();
     const user = await getSubscribedUser();
 
-    const model = imageModels[modelId];
+    const model = imageModels[modelId] ?? (modelId.startsWith('aiml:')
+      ? {
+          label: `AIML (${modelId.split(':').slice(-1)[0]})`,
+          chef: { id: 'aiml', name: 'AIML', icon: (await import('@/lib/icons')).UnknownIcon } as any,
+          providers: [
+            {
+              ...( { id: 'aiml', name: 'AIML', icon: (await import('@/lib/icons')).UnknownIcon } as any),
+              model: (await import('@/lib/models/image/aiml')).aiml.image(modelId.split(':').slice(-1)[0]),
+              getCost: () => 0.02,
+            },
+          ],
+          supportsEdit: true,
+        } as any
+      : undefined);
 
     if (!model) {
       throw new Error('Model not found');
@@ -177,6 +190,13 @@ export const editImageAction = async ({
           .then((buffer) => Buffer.from(buffer).toString('base64'));
 
         providerOptions = { bfl: { image: base64First } } as const;
+      } else if (providerName === 'aiml') {
+        // AIML accepts image_url for single and image_urls for multiple
+        if (images.length === 1) {
+          providerOptions = { aiml: { image_url: images[0].url } } as const;
+        } else if (images.length > 1) {
+          providerOptions = { aiml: { image_urls: images.map((img) => img.url) } } as const;
+        }
       }
 
       const arkModelId = (provider.model as { modelId?: string }).modelId ?? '';
