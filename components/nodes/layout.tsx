@@ -182,11 +182,7 @@ export const NodeLayout = ({
       </ContextMenu>
       {type !== 'video' && (
         <>
-          <Handle
-            type="source"
-            position={Position.Right}
-            className="!bg-transparent !border-none !shadow-none"
-          />
+          <Handle type="source" position={Position.Right} />
         </>
       )}
       <Dialog open={showData} onOpenChange={setShowData}>
