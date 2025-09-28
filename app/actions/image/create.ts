@@ -100,7 +100,20 @@ export const generateImageAction = async ({
   try {
     const client = await createClient();
     const user = await getSubscribedUser();
-    const model = imageModels[modelId];
+    const model = imageModels[modelId] ?? (modelId.startsWith('aiml:')
+      ? {
+          label: `AIML (${modelId.split(':').slice(-1)[0]})`,
+          chef: { id: 'aiml', name: 'AIML', icon: (await import('@/lib/icons')).UnknownIcon } as any,
+          providers: [
+            {
+              ...( { id: 'aiml', name: 'AIML', icon: (await import('@/lib/icons')).UnknownIcon } as any),
+              model: (await import('@/lib/models/image/aiml')).aiml.image(modelId.split(':').slice(-1)[0]),
+              getCost: () => 0.02,
+            },
+          ],
+          supportsEdit: true,
+        } as any
+      : undefined);
 
     if (!model) {
       throw new Error('Model not found');

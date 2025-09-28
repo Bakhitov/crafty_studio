@@ -197,7 +197,7 @@ export const ImageTransform = ({
 
     // Dynamic AIML models from API
     const dynamicAimlEntries = aimlModels.map((m) => {
-      const key = `aiml:${m.id}`;
+      const key = `aiml:${m.developer}:${m.id}`;
       const base = imageModels['aiml-flux-schnell'];
       const disabled = hasIncomingImageNodes ? !(base?.supportsEdit ?? true) : false;
       return [
