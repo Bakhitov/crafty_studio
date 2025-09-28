@@ -11,6 +11,8 @@ import { useReactFlow } from '@xyflow/react';
 import { Loader2Icon } from 'lucide-react';
 import Image from 'next/image';
 import { ImageZoom } from '@/components/ui/kibo-ui/image-zoom';
+import dynamic from 'next/dynamic';
+const ImageAnnotationViewer = dynamic(() => import('@/components/ui/image-annotation-viewer').then(m => m.ImageAnnotationViewer), { ssr: false });
 import { useState } from 'react';
 import type { ImageNodeProps } from '.';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -94,15 +96,22 @@ export const ImagePrimitive = ({
         </Skeleton>
       )}
       {!isUploading && data.content && (
-        <ImageZoom>
-          <Image
-            src={data.content.url}
-            alt="Image"
-            width={data.width ?? 1000}
-            height={data.height ?? 1000}
-            className="h-auto w-full"
-          />
-        </ImageZoom>
+        <div className="relative">
+          <ImageZoom>
+            <Image
+              src={data.content.url}
+              alt="Image"
+              width={data.width ?? 1000}
+              height={data.height ?? 1000}
+              className="h-auto w-full"
+            />
+          </ImageZoom>
+          {Boolean((data as any)?.annotationState) && (
+            <div className="absolute inset-0 pointer-events-none">
+              <ImageAnnotationViewer imageUrl={data.content.url} state={(data as any).annotationState} />
+            </div>
+          )}
+        </div>
       )}
       {!isUploading && !data.content && (
         <Dropzone

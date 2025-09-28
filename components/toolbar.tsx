@@ -35,6 +35,7 @@ import {
 } from './ui/kibo-ui/video-player';
 
 const ImageEditor = dynamic(() => import('@/components/ui/image-editor').then(m => m.ImageEditor), { ssr: false });
+const ImageAnnotationViewer = dynamic(() => import('@/components/ui/image-annotation-viewer').then(m => m.ImageAnnotationViewer), { ssr: false });
 
 type ToolbarProps = {
   projectId?: string;
@@ -358,18 +359,24 @@ const GalleryButton = ({
                                     }}
                                   >
                                     {isImage && (
-                                      <ImageZoom className="absolute inset-0">
-                                        <Image
-                                          src={file.url}
-                                          alt={file.name}
-                                          fill
-                                          unoptimized
-                                          className="object-cover"
-                                          sizes={isVideo ? '280px' : '140px'}
-                                          quality={60}
-                                          loading="lazy"
-                                        />
-                                      </ImageZoom>
+                                      <>
+                                        <ImageZoom className="absolute inset-0">
+                                          <Image
+                                            src={file.url}
+                                            alt={file.name}
+                                            fill
+                                            unoptimized
+                                            className="object-cover"
+                                            sizes={isVideo ? '280px' : '140px'}
+                                            quality={60}
+                                            loading="lazy"
+                                          />
+                                        </ImageZoom>
+                                        {/* Annotation overlay if we decide to fetch state in the future */}
+                                        {/* <div className="absolute inset-0 pointer-events-none">
+                                          <ImageAnnotationViewer imageUrl={file.url} state={...} />
+                                        </div> */}
+                                      </>
                                     )}
                                     {isVideo && (
                                       <video
