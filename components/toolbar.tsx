@@ -34,6 +34,7 @@ import {
   VideoPlayerVolumeRange,
 } from './ui/kibo-ui/video-player';
 
+const ImageEditor = dynamic(() => import('@/components/ui/image-editor').then(m => m.ImageEditor), { ssr: false });
 
 type ToolbarProps = {
   projectId?: string;
@@ -496,7 +497,7 @@ const GalleryButton = ({
                 <ImageEditor
                   imageUrl={editorFile.url}
                   onCancel={() => setEditorFile(null)}
-                  onSave={async (file) => {
+                  onSave={async (file: File) => {
                     try {
                       await uploadFile(file, 'files');
                       setEditorFile(null);
