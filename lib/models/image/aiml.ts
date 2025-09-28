@@ -96,7 +96,7 @@ export const aiml = {
         headers?: Record<string, string | undefined>;
       }
     ) => {
-      const { prompt, providerOptions, abortSignal, headers } = args;
+      const { prompt, size, seed, providerOptions, abortSignal, headers } = args;
       // Prepare payload with optional image_url(s) if provided via providerOptions
       let imageUrl: string | undefined;
       let imageUrls: string[] | undefined;
@@ -113,7 +113,14 @@ export const aiml = {
       }
 
       const body: Record<string, unknown> = { model: modelId, prompt };
+      const isQwenEdit = modelId.startsWith('alibaba/qwen-image-edit');
+      const isQwenBase = modelId.startsWith('alibaba/qwen-image') && !isQwenEdit;
+      if (isQwenBase) {
+        if (typeof size === 'string' && size.length > 0) body.size = size;
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
       if (imageUrl) body.image_url = imageUrl;
+      if (isQwenEdit && imageUrl) body.image = imageUrl;
       if (imageUrls && imageUrls.length) body.image_urls = imageUrls;
 
       const res = await fetch(BASE_URL, {
@@ -138,6 +145,13 @@ export const aiml = {
       }
 
       const json = (await res.json()) as AimlSuccessResponse;
+      // Try to infer content type from structured responses
+      let detectedContentType: string | undefined;
+      const imagesMeta = (json as unknown as { images?: Array<{ content_type?: string }> }).images;
+      if (Array.isArray(imagesMeta) && imagesMeta.length > 0) {
+        const ct = imagesMeta[0]?.content_type;
+        if (typeof ct === 'string' && ct.length > 0) detectedContentType = ct;
+      }
       const candidates = extractCandidateStrings(json);
 
       if (!candidates.length) {
@@ -163,7 +177,7 @@ export const aiml = {
         response: {
           timestamp: new Date(),
           modelId,
-          headers: undefined,
+          headers: detectedContentType ? { 'content-type': detectedContentType } : undefined,
         },
       };
     },

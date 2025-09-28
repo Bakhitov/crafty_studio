@@ -191,11 +191,9 @@ export const editImageAction = async ({
 
         providerOptions = { bfl: { image: base64First } } as const;
       } else if (providerName === 'aiml') {
-        // AIML accepts image_url for single and image_urls for multiple
-        if (images.length === 1) {
+        // AIML/Qwen edit expects a single image reference; use the first image
+        if (images.length >= 1) {
           providerOptions = { aiml: { image_url: images[0].url } } as const;
-        } else if (images.length > 1) {
-          providerOptions = { aiml: { image_urls: images.map((img) => img.url) } } as const;
         }
       }
 
@@ -219,8 +217,8 @@ export const editImageAction = async ({
       image = generatedImageResponse.image;
     }
 
-    const bytes = Buffer.from(image.base64, 'base64');
-    const contentType = 'image/png';
+    const contentType = image.mediaType ?? 'image/png';
+    const bytes = Buffer.from(image.uint8Array ?? Buffer.from(image.base64, 'base64'));
 
     const blob = await client.storage
       .from('files')
