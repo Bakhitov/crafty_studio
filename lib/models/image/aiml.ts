@@ -136,6 +136,16 @@ export const aiml = {
       const isImagenUltraPreview = modelId.startsWith('imagen-4.0-ultra-generate-preview-06-06');
       const isImagen4Preview = modelId.startsWith('google/imagen4/preview');
       const isImagen3 = modelId.startsWith('imagen-3.0-generate-002');
+      // Flux
+      const isFluxPro = modelId === 'flux-pro' || modelId.startsWith('flux-pro/');
+      const isFluxRealism = modelId === 'flux-realism';
+      const isFluxSchnell = modelId.startsWith('flux/schnell');
+      const isFluxDev = modelId === 'flux/dev';
+      const isFluxDevI2I = modelId.startsWith('flux/dev/image-to-image');
+      const isFluxKontextProTTI = modelId.startsWith('flux/kontext-pro/text-to-image');
+      const isFluxKontextProI2I = modelId.startsWith('flux/kontext-pro/image-to-image');
+      const isFluxKontextMaxTTI = modelId.startsWith('flux/kontext-max/text-to-image');
+      const isFluxKontextMaxI2I = modelId.startsWith('flux/kontext-max/image-to-image');
 
       // Qwen base supports size; edit expects single image
       if (isQwenBase) {
@@ -163,23 +173,27 @@ export const aiml = {
 
       // Helper: choose aspect ratio from size
       const applyAspectRatio = () => {
-        const choices = ['1:1', '16:9', '9:16', '3:4', '4:3'] as const;
-        const ratioMap: Record<(typeof choices)[number], number> = {
+        const choices = ['1:1', '16:9', '9:16', '3:4', '4:3', '21:9', '3:2', '2:3', '9:21'] as const;
+        const ratioMap: Record<string, number> = {
           '1:1': 1,
           '16:9': 16 / 9,
           '9:16': 9 / 16,
           '3:4': 3 / 4,
           '4:3': 4 / 3,
+          '21:9': 21 / 9,
+          '3:2': 3 / 2,
+          '2:3': 2 / 3,
+          '9:21': 9 / 21,
         };
-        let aspect: (typeof choices)[number] = '1:1';
+        let aspect = '1:1';
         if (typeof size === 'string' && size.includes('x')) {
           const [w, h] = size.split('x').map(Number);
           if (w > 0 && h > 0) {
             const r = w / h;
-            let best = '1:1' as (typeof choices)[number];
+            let best = '1:1';
             let bestDiff = Infinity;
             for (const k of choices) {
-              const d = Math.abs(r - ratioMap[k]);
+              const d = Math.abs(r - (ratioMap[k] ?? 1));
               if (d < bestDiff) {
                 best = k;
                 bestDiff = d;
@@ -246,18 +260,42 @@ export const aiml = {
         if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
       }
 
-      // Google Imagen 4 family: aspect_ratio, seed where supported
+      // DALL·E: size string
+      if (isDalle2 || isDalle3 || isAIMLGptImage1) {
+        if (typeof size === 'string' && size.length > 0) body.size = size;
+      }
+
+      // Google Imagen 4 family and Imagen 3
       if (isImagenUltra || isImagenFast || isImagenGen || isImagenUltraPreview || isImagen4Preview || isImagen3) {
-        // Apply aspect ratio when available
-        if (!isImagenGen) {
-          applyAspectRatio();
-        }
-        if (isImagenUltra || isImagenFast || isImagenUltraPreview || isImagen4Preview || isImagen3) {
-          if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
-        }
-        if (isImagen3) {
-          (body as Record<string, unknown>).convert_base64_to_url = true;
-        }
+        if (!isImagenGen) applyAspectRatio();
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+        if (isImagen3) (body as Record<string, unknown>).convert_base64_to_url = true;
+      }
+
+      // Flux family
+      if (isFluxPro || isFluxRealism || isFluxDev || isFluxSchnell) {
+        // text-to-image variants use image_size
+        applyImageSize();
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+      if (isFluxDevI2I) {
+        // expects a single image_url; ignore multiples
+        const url = imageUrl ?? imageUrls?.[0];
+        if (url) body.image_url = url;
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+      if (isFluxKontextProTTI || isFluxKontextMaxTTI) {
+        // aspect ratio only
+        applyAspectRatio();
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+      if (isFluxKontextProI2I || isFluxKontextMaxI2I) {
+        // accepts one or many image_url values; choose based on input
+        const urls = (imageUrls && imageUrls.length ? imageUrls : (imageUrl ? [imageUrl] : []));
+        if (urls.length === 1) body.image_url = urls[0];
+        else if (urls.length > 1) body.image_url = urls.slice(0, 4);
+        applyAspectRatio();
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
       }
 
       const res = await fetch(BASE_URL, {
