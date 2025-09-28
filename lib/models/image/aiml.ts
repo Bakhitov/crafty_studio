@@ -128,6 +128,14 @@ export const aiml = {
       const isDalle2 = modelId.startsWith('dall-e-2');
       const isDalle3 = modelId.startsWith('dall-e-3');
       const isAIMLGptImage1 = modelId.startsWith('openai/gpt-image-1');
+      const isGeminiFlashEdit = modelId.startsWith('google/gemini-2.5-flash-image-edit');
+      const isGeminiFlash = modelId.startsWith('google/gemini-2.5-flash-image') && !isGeminiFlashEdit;
+      const isImagenUltra = modelId.startsWith('google/imagen-4.0-ultra-generate-001');
+      const isImagenFast = modelId.startsWith('google/imagen-4.0-fast-generate-001');
+      const isImagenGen = modelId.startsWith('google/imagen-4.0-generate-001');
+      const isImagenUltraPreview = modelId.startsWith('imagen-4.0-ultra-generate-preview-06-06');
+      const isImagen4Preview = modelId.startsWith('google/imagen4/preview');
+      const isImagen3 = modelId.startsWith('imagen-3.0-generate-002');
 
       // Qwen base supports size; edit expects single image
       if (isQwenBase) {
@@ -153,18 +161,8 @@ export const aiml = {
         }
       };
 
-      // DALL·E 2/3: use size (string enum)
-      if (isDalle2 || isDalle3) {
-        if (typeof size === 'string' && size.length > 0) body.size = size;
-      }
-
-      // AIML gpt-image-1: uses size string
-      if (isAIMLGptImage1) {
-        if (typeof size === 'string' && size.length > 0) body.size = size;
-      }
-
-      // Bytedance: Seedream 3.0 uses aspect_ratio (size deprecated)
-      if (isSeedream3) {
+      // Helper: choose aspect ratio from size
+      const applyAspectRatio = () => {
         const choices = ['1:1', '16:9', '9:16', '3:4', '4:3'] as const;
         const ratioMap: Record<(typeof choices)[number], number> = {
           '1:1': 1,
@@ -191,6 +189,22 @@ export const aiml = {
           }
         }
         body.aspect_ratio = aspect;
+      };
+
+      // Google Gemini 2.5 Flash Image Edit: image_urls
+      if (isGeminiFlashEdit) {
+        const urls = (imageUrls && imageUrls.length ? imageUrls : (imageUrl ? [imageUrl] : [])).slice(0, 16);
+        if (urls.length) body.image_urls = urls;
+      }
+
+      // Google Gemini 2.5 Flash Image: aspect_ratio from size if provided
+      if (isGeminiFlash) {
+        applyAspectRatio();
+      }
+
+      // Bytedance: Seedream 3.0 uses aspect_ratio (size deprecated)
+      if (isSeedream3) {
+        applyAspectRatio();
         if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
         body.watermark = false;
       }
@@ -232,9 +246,18 @@ export const aiml = {
         if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
       }
 
-      // Qwen edit: explicitly disable watermark if supported
-      if (isQwenEdit) {
-        (body as Record<string, unknown>).watermark = false;
+      // Google Imagen 4 family: aspect_ratio, seed where supported
+      if (isImagenUltra || isImagenFast || isImagenGen || isImagenUltraPreview || isImagen4Preview || isImagen3) {
+        // Apply aspect ratio when available
+        if (!isImagenGen) {
+          applyAspectRatio();
+        }
+        if (isImagenUltra || isImagenFast || isImagenUltraPreview || isImagen4Preview || isImagen3) {
+          if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+        }
+        if (isImagen3) {
+          (body as Record<string, unknown>).convert_base64_to_url = true;
+        }
       }
 
       const res = await fetch(BASE_URL, {
