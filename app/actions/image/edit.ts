@@ -191,9 +191,20 @@ export const editImageAction = async ({
 
         providerOptions = { bfl: { image: base64First } } as const;
       } else if (providerName === 'aiml') {
-        // AIML/Qwen edit expects a single image reference; use the first image
-        if (images.length >= 1) {
-          providerOptions = { aiml: { image_url: images[0].url } } as const;
+        const aimlModelId = (provider.model as { modelId?: string }).modelId ?? '';
+        const isEdit = aimlModelId.includes('edit');
+        if (isEdit) {
+          // Edit variants expect a single image
+          if (images.length >= 1) {
+            providerOptions = { aiml: { image_url: images[0].url } } as const;
+          }
+        } else {
+          // Non-edit AIML models: keep support for multiple images if provided
+          if (images.length === 1) {
+            providerOptions = { aiml: { image_url: images[0].url } } as const;
+          } else if (images.length > 1) {
+            providerOptions = { aiml: { image_urls: images.map((img) => img.url) } } as const;
+          }
         }
       }
 
