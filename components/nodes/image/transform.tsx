@@ -108,7 +108,7 @@ export const ImageTransform = ({
         .join('\n');
 
       // Notify: Seedream 3.x (Ark) supports only one input image
-      const providerName = (selectedModel.providers?.[0]?.model as { provider?: string })?.provider;
+      const providerName = (selectedModel?.providers?.[0]?.model as { provider?: string } | undefined)?.provider;
       const isSeedream3Ark =
         providerName === 'ark' &&
         (modelId.startsWith('seedream-3') || modelId.startsWith('seededit-3'));
