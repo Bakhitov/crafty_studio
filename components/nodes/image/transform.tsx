@@ -20,6 +20,9 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   DownloadIcon,
+  HelpCircleIcon,
+  Dice1Icon,
+  X as XSmallIcon,
 } from 'lucide-react';
 import Image from 'next/image';
 import { ImageZoom } from '@/components/ui/kibo-ui/image-zoom';
@@ -38,6 +41,7 @@ import type { ImageNodeProps } from '.';
 import { ModelSelector } from '../model-selector';
 import { ImageSizeSelector } from './image-size-selector';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 type ImageTransformProps = ImageNodeProps & {
@@ -75,6 +79,17 @@ export const ImageTransform = ({
   const analytics = useAnalytics();
   const selectedModel = imageModels[modelId];
   const size = data.size ?? selectedModel?.sizes?.at(0);
+
+  // Ensure default size 1024x1024 when supported
+  useEffect(() => {
+    const availableSizes = selectedModel?.sizes ?? [];
+    if (!availableSizes.length) return;
+    const has1024 = availableSizes.includes('1024x1024' as never);
+    const current = data.size;
+    if (!current && has1024) {
+      updateNodeData(id, { size: '1024x1024' });
+    }
+  }, [selectedModel?.sizes, data.size, id, updateNodeData]);
 
   const handleGenerate = useCallback(async () => {
     if (loading || !project?.id) {
@@ -256,21 +271,57 @@ export const ImageTransform = ({
       });
     }
 
-    // Seed input (compact)
+    // Seed input redesigned
     items.push({
       children: (
-        <Input
-          value={typeof data.seed === 'number' ? String(data.seed) : ''}
-          onChange={(e) => {
-            const raw = e.target.value.trim();
-            const next = raw === '' ? undefined : Number(raw);
-            updateNodeData(id, { seed: Number.isFinite(next as number) ? next : undefined });
-          }}
-          placeholder="seed"
-          className="w-[120px] rounded-full"
-          type="number"
-          min={1}
-        />
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-xs text-muted-foreground">Seed</span>
+            </TooltipTrigger>
+            <TooltipContent>Фиксированный Seed даёт повторяемый результат.</TooltipContent>
+          </Tooltip>
+          <Input
+            value={typeof data.seed === 'number' ? String(data.seed) : ''}
+            onChange={(e) => {
+              const raw = e.target.value.trim();
+              const next = raw === '' ? undefined : Number(raw);
+              updateNodeData(id, { seed: Number.isFinite(next as number) ? next : undefined });
+            }}
+            placeholder="random"
+            className="w-[120px] rounded-full"
+            type="number"
+            min={1}
+          />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                onClick={() => updateNodeData(id, { seed: Math.floor(Math.random() * 2 ** 31) })}
+              >
+                <Dice1Icon size={14} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Случайный seed</TooltipContent>
+          </Tooltip>
+          {typeof data.seed === 'number' && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full"
+                  onClick={() => updateNodeData(id, { seed: undefined })}
+                >
+                  <XSmallIcon size={14} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Очистить seed</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
       ),
     });
 
