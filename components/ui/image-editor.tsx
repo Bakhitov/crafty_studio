@@ -68,6 +68,14 @@ export function ImageEditor({ imageUrl, initialState, onSave, onCancel, classNam
 						setError((e as Error).message);
 					}
 				});
+
+				// Wire close/cancel events to propagate onCancel
+				editor.addEventListener('editorclose', () => {
+					try { onCancel(); } catch {}
+				});
+				editor.addEventListener('editorcancel', () => {
+					try { onCancel(); } catch {}
+				});
 			} catch (e) {
 				setError((e as Error).message);
 			}
