@@ -125,6 +125,9 @@ export const aiml = {
       const isStableV3Medium = modelId.startsWith('stable-diffusion-v3-medium');
       const isStableV35Large = modelId.startsWith('stable-diffusion-v35-large');
       const isTripoSR = modelId === 'triposr' || modelId.startsWith('triposr/');
+      const isDalle2 = modelId.startsWith('dall-e-2');
+      const isDalle3 = modelId.startsWith('dall-e-3');
+      const isAIMLGptImage1 = modelId.startsWith('openai/gpt-image-1');
 
       // Qwen base supports size; edit expects single image
       if (isQwenBase) {
@@ -138,6 +141,26 @@ export const aiml = {
       // TripoSR: requires single image_url
       if (isTripoSR && imageUrl) {
         body.image_url = imageUrl;
+      }
+
+      // Helper: apply image_size from numeric size
+      const applyImageSize = () => {
+        if (typeof size === 'string' && size.includes('x')) {
+          const [w, h] = size.split('x').map(Number);
+          if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) {
+            body.image_size = { width: w, height: h };
+          }
+        }
+      };
+
+      // DALL·E 2/3: use size (string enum)
+      if (isDalle2 || isDalle3) {
+        if (typeof size === 'string' && size.length > 0) body.size = size;
+      }
+
+      // AIML gpt-image-1: uses size string
+      if (isAIMLGptImage1) {
+        if (typeof size === 'string' && size.length > 0) body.size = size;
       }
 
       // Bytedance: Seedream 3.0 uses aspect_ratio (size deprecated)
@@ -178,16 +201,6 @@ export const aiml = {
         if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
         body.watermark = false;
       }
-
-      // Helper: apply image_size from numeric size
-      const applyImageSize = () => {
-        if (typeof size === 'string' && size.includes('x')) {
-          const [w, h] = size.split('x').map(Number);
-          if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) {
-            body.image_size = { width: w, height: h };
-          }
-        }
-      };
 
       // Bytedance: v4 t2i/edit and USO use image_size and image_urls
       if (isSeedreamV4T2I) {
