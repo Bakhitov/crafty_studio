@@ -27,6 +27,7 @@ type EditImageActionProps = {
   nodeId: string;
   projectId: string;
   size?: string;
+  seed?: number;
 };
 
 const generateGptImage1Image = async ({
@@ -90,6 +91,7 @@ export const editImageAction = async ({
   nodeId,
   projectId,
   size,
+  seed,
 }: EditImageActionProps): Promise<
   | {
       nodeData: object;
@@ -216,6 +218,7 @@ export const editImageAction = async ({
         model: provider.model,
         prompt,
         size: (isArk3 ? undefined : (size as never)) as never,
+        seed: seed as never,
         providerOptions: providerOptions as never,
       });
 

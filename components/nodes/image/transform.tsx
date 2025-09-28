@@ -37,6 +37,7 @@ import { mutate } from 'swr';
 import type { ImageNodeProps } from '.';
 import { ModelSelector } from '../model-selector';
 import { ImageSizeSelector } from './image-size-selector';
+import { Input } from '@/components/ui/input';
 
 
 type ImageTransformProps = ImageNodeProps & {
@@ -127,6 +128,7 @@ export const ImageTransform = ({
             projectId: project.id,
             modelId,
             size,
+            seed: data.seed,
           })
         : await generateImageAction({
             prompt: textNodes.join('\n'),
@@ -135,6 +137,7 @@ export const ImageTransform = ({
             projectId: project.id,
             nodeId: id,
             size,
+            seed: data.seed,
           });
 
       if ('error' in response) {
@@ -167,6 +170,7 @@ export const ImageTransform = ({
     modelId,
     getNodes,
     updateNodeData,
+    data.seed,
   ]);
 
   const handleInstructionsChange: ChangeEventHandler<HTMLTextAreaElement> = (
@@ -228,12 +232,22 @@ export const ImageTransform = ({
       },
     ];
 
-    if (selectedModel?.sizes?.length) {
+    // Decide size options: use model sizes or fallback for AIML dynamic non-edit
+    const isDynamicAimlSelected = typeof modelId === 'string' && modelId.startsWith('aiml:');
+    const dynamicId = isDynamicAimlSelected ? modelId.split(':').slice(-1)[0] : '';
+    const dynamicIsEdit = isDynamicAimlSelected && dynamicId.includes('edit');
+    const sizeOptions = selectedModel?.sizes && selectedModel.sizes.length
+      ? selectedModel.sizes
+      : (isDynamicAimlSelected && !dynamicIsEdit
+          ? ['1024x1024', '1024x1536', '1536x1024', '1024x768', '768x1024']
+          : []);
+
+    if (sizeOptions.length) {
       items.push({
         children: (
           <ImageSizeSelector
             value={size ?? ''}
-            options={selectedModel?.sizes ?? []}
+            options={sizeOptions}
             id={id}
             className="w-[200px] rounded-full"
             onChange={(value) => updateNodeData(id, { size: value })}
@@ -241,6 +255,24 @@ export const ImageTransform = ({
         ),
       });
     }
+
+    // Seed input (compact)
+    items.push({
+      children: (
+        <Input
+          value={typeof data.seed === 'number' ? String(data.seed) : ''}
+          onChange={(e) => {
+            const raw = e.target.value.trim();
+            const next = raw === '' ? undefined : Number(raw);
+            updateNodeData(id, { seed: Number.isFinite(next as number) ? next : undefined });
+          }}
+          placeholder="seed"
+          className="w-[120px] rounded-full"
+          type="number"
+          min={1}
+        />
+      ),
+    });
 
     items.push(
       loading
@@ -301,6 +333,7 @@ export const ImageTransform = ({
     handleGenerate,
     project?.id,
     aimlModels,
+    data.seed,
   ]);
 
   const aspectRatio = useMemo(() => {
