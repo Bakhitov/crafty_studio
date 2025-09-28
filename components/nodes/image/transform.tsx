@@ -161,6 +161,9 @@ export const ImageTransform = ({
 
       updateNodeData(id, response.nodeData);
 
+      // Delay hiding loader to avoid showing previous image for a frame
+      setTimeout(() => setLoading(false), 50);
+
       toast.success('Image generated successfully');
 
       setTimeout(() => mutate('credits'), 5000);
@@ -170,7 +173,6 @@ export const ImageTransform = ({
       }
     } catch (error) {
       handleError('Error generating image', error);
-    } finally {
       setLoading(false);
     }
   }, [
@@ -275,7 +277,7 @@ export const ImageTransform = ({
       });
     }
 
-    // Seed input redesigned
+    // Seed input simplified (no random/clear buttons)
     items.push({
       children: (
         <div className="flex items-center gap-2">
@@ -297,36 +299,6 @@ export const ImageTransform = ({
             type="number"
             min={1}
           />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full"
-                onClick={() => updateNodeData(id, { seed: Math.floor(Math.random() * 2 ** 31) })}
-                aria-label="Случайное зерно"
-              >
-                <FaRandom size={14} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Случайное зерно</TooltipContent>
-          </Tooltip>
-          {typeof data.seed === 'number' && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full"
-                  onClick={() => updateNodeData(id, { seed: undefined })}
-                  aria-label="Очистить зерно"
-                >
-                  <XSmallIcon size={14} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Очистить зерно</TooltipContent>
-            </Tooltip>
-          )}
         </div>
       ),
     });
@@ -479,6 +451,11 @@ export const ImageTransform = ({
     ) : null
   );
 
+  const displayedUrl = useMemo(() => {
+    const byIndex = Array.isArray(data.versions) ? data.versions[currentIndex]?.url : undefined;
+    return byIndex ?? data.generated?.url;
+  }, [data.versions, currentIndex, data.generated?.url]);
+
   return (
     <NodeLayout id={id} data={data} type={type} title={title} toolbar={toolbar} topCenter={topCenter}>
       {loading && (
@@ -492,7 +469,7 @@ export const ImageTransform = ({
           />
         </Skeleton>
       )}
-      {!loading && !data.generated?.url && (
+      {!loading && !displayedUrl && (
         <div
           className="flex w-full items-center justify-center rounded-b-xl bg-secondary p-4"
           style={{ aspectRatio }}
@@ -503,10 +480,10 @@ export const ImageTransform = ({
           </p>
         </div>
       )}
-      {!loading && data.generated?.url && (
+      {!loading && displayedUrl && (
         <ImageZoom>
           <Image
-            src={data.generated.url}
+            src={displayedUrl}
             alt="Generated image"
             width={1000}
             height={1000}

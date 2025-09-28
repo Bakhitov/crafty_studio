@@ -161,12 +161,14 @@ export const aiml = {
         }
         body.aspect_ratio = aspect;
         if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+        body.watermark = false;
       }
 
       // Bytedance: Seededit 3.0 i2i expects a single 'image'
       if (isSeededit30 && imageUrl) {
         body.image = imageUrl;
         if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+        body.watermark = false;
       }
 
       // Bytedance: v4 t2i/edit and USO use image_size and image_urls
@@ -194,6 +196,11 @@ export const aiml = {
         const urls = (imageUrls && imageUrls.length ? imageUrls : (imageUrl ? [imageUrl] : [])).slice(0, 3);
         if (urls.length) body.image_urls = urls;
         if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+
+      // Qwen edit: explicitly disable watermark if supported
+      if (isQwenEdit) {
+        (body as Record<string, unknown>).watermark = false;
       }
 
       const res = await fetch(BASE_URL, {
