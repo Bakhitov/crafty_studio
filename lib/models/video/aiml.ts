@@ -14,18 +14,19 @@ type AimlGenerationGetResponse = {
   [key: string]: unknown;
 };
 
-const BASE_URL = 'https://api.aimlapi.com/v2/generate/video/minimax/generation';
+const BASE_ROOT = 'https://api.aimlapi.com/v2/generate/video';
 
-export const aimlVideo = (modelId: string): VideoModel => ({
+export const aimlVideo = (modelId: string, vendor: string = 'minimax'): VideoModel => ({
   modelId,
   generate: async ({ prompt, imagePrompt }) => {
+    const baseUrl = `${BASE_ROOT}/${vendor}/generation`;
     const createPayload = {
       model: modelId,
       prompt,
       ...(imagePrompt ? { first_frame_image: imagePrompt } : {}),
     } as const;
 
-    const createRes = await fetch(BASE_URL, {
+    const createRes = await fetch(baseUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -59,7 +60,7 @@ export const aimlVideo = (modelId: string): VideoModel => ({
     for (;;) {
       await new Promise((r) => setTimeout(r, 2000));
 
-      const url = new URL(BASE_URL);
+      const url = new URL(baseUrl);
       url.searchParams.set('generation_id', generationId);
 
       const getRes = await fetch(url, {

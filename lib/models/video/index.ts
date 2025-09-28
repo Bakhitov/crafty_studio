@@ -37,7 +37,7 @@ export const videoModels: Record<string, CraftyVideoModel> = {
     providers: [
       {
         ...providers.aiml,
-        model: aimlVideo('video-01'),
+        model: aimlVideo('video-01', 'minimax'),
         // Pricing unknown; set to 0 for now. Adjust when known.
         getCost: () => 0,
       },
