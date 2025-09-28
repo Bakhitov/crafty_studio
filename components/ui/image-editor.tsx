@@ -47,10 +47,10 @@ export function ImageEditor({ imageUrl, initialState, onSave, onCancel, classNam
 					containerRef.current.appendChild(editor);
 				}
 
-				// Load previous state if provided
+				// Load previous state if provided (method availability may vary across UI builds)
 				if (initialState) {
 					try {
-						editor.show(initialState as never);
+						(editor as any).show?.(initialState as never);
 					} catch {}
 				}
 
