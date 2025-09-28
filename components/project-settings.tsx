@@ -64,11 +64,11 @@ export const ProjectSettings = ({ data }: ProjectSettingsProps) => {
         throw new Error(response.error);
       }
 
-      toast.success('Project updated successfully');
+      toast.success('Проект успешно обновлен');
       setOpen(false);
       router.refresh();
     } catch (error) {
-      handleError('Error updating project', error);
+      handleError('Ошибка при обновлении проекта', error);
     } finally {
       setIsUpdating(false);
     }
@@ -82,11 +82,11 @@ export const ProjectSettings = ({ data }: ProjectSettingsProps) => {
         throw new Error(response.error);
       }
 
-      toast.success('Project deleted successfully');
+      toast.success('Проект успешно удален');
       setOpen(false);
       router.push('/');
     } catch (error) {
-      handleError('Error deleting project', error);
+      handleError('Ошибка при удалении проекта', error);
     }
   };
   return (
@@ -139,7 +139,7 @@ export const ProjectSettings = ({ data }: ProjectSettingsProps) => {
             />
           </div>
           <Button type="submit" disabled={isUpdating || !name.trim()}>
-            Update
+            Обновить
           </Button>
         </form>
         <DialogFooter className="-mx-6 mt-4 border-t px-6 pt-4 sm:justify-center">
@@ -187,7 +187,7 @@ const TagsManager = ({ onClose }: { onClose: () => void }) => {
       const json = await res.json() as { options: Array<{ label: string; value: string; expandable?: boolean; hasChildren?: boolean; isLeaf?: boolean }> };
       setItems(json.options || []);
     } catch (e: any) {
-      setError(e?.message || 'Failed to load');
+      setError(e?.message || 'Загрузка не удалась');
     } finally {
       setLoading(false);
     }
@@ -207,7 +207,7 @@ const TagsManager = ({ onClose }: { onClose: () => void }) => {
       setNewSlug(''); setNewLabel('');
       await load(parent);
     } catch (e: any) {
-      alert(e?.message || 'Create failed');
+      alert(e?.message || 'Создание не удалось');
     } finally {
       setCreating(false);
     }

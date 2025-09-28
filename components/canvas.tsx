@@ -92,7 +92,7 @@ export const Canvas = ({ children, ...props }: ReactFlowProps) => {
 
       setSaveState((prev) => ({ ...prev, lastSaved: new Date() }));
     } catch (error) {
-      handleError('Error saving project', error);
+      handleError('Ошибка при сохранении проекта', error);
     } finally {
       setSaveState((prev) => ({ ...prev, isSaving: false }));
     }
@@ -412,11 +412,11 @@ export const Canvas = ({ children, ...props }: ReactFlowProps) => {
           <ContextMenuContent>
             <ContextMenuItem onClick={addDropNode}>
               <PlusIcon size={12} />
-              <span>Add a new node</span>
+              <span>Добавить узел</span>
             </ContextMenuItem>
             <ContextMenuItem onClick={handleSelectAll}>
               <BoxSelectIcon size={12} />
-              <span>Select all</span>
+              <span>Выбрать все</span>
             </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>

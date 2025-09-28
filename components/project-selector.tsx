@@ -181,7 +181,7 @@ export const ProjectSelector = ({
             <ComboboxGroup>
               <ComboboxItem value="new">
                 <PlusIcon size={16} />
-                Create new project
+                Создать новый проект
               </ComboboxItem>
             </ComboboxGroup>
           </ComboboxList>
@@ -190,9 +190,9 @@ export const ProjectSelector = ({
       <Dialog open={createOpen} onOpenChange={setCreateOpen} modal={false}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create new project</DialogTitle>
+            <DialogTitle>Создать новый проект</DialogTitle>
             <DialogDescription>
-              What would you like to call your new project?
+              Как бы вы хотели назвать ваш новый проект?
             </DialogDescription>
             <form
               onSubmit={handleCreateProject}
@@ -200,12 +200,12 @@ export const ProjectSelector = ({
               aria-disabled={isCreating}
             >
               <Input
-                placeholder="My new project"
+                placeholder="Мой новый проект"
                 value={name}
                 onChange={({ target }) => setName(target.value)}
               />
               <Button type="submit" disabled={isCreating || !name.trim()}>
-                Create
+                Создать
               </Button>
             </form>
           </DialogHeader>

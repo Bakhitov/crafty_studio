@@ -21,6 +21,8 @@ type GenerateVideoActionProps = {
   }[];
   nodeId: string;
   projectId: string;
+  duration?: number;
+  aspectRatio?: string;
 };
 
 export const generateVideoAction = async ({
@@ -29,6 +31,8 @@ export const generateVideoAction = async ({
   images,
   nodeId,
   projectId,
+  duration = 5,
+  aspectRatio = '16:9',
 }: GenerateVideoActionProps): Promise<
   | {
       nodeData: object;
@@ -40,7 +44,23 @@ export const generateVideoAction = async ({
   try {
     const client = await createClient();
     const user = await getSubscribedUser();
-    const model = videoModels[modelId];
+    // Support dynamic AIML model ids: "aiml:<vendor>:<modelId>"
+    const model = videoModels[modelId] ?? (modelId.startsWith('aiml:')
+      ? {
+          label: `AIML (${modelId.split(':').slice(-1)[0]})`,
+          chef: { id: 'aiml', name: 'AIML', icon: (await import('@/lib/icons')).UnknownIcon } as any,
+          providers: [
+            {
+              ...( { id: 'aiml', name: 'AIML', icon: (await import('@/lib/icons')).UnknownIcon } as any),
+              model: (await import('@/lib/models/video/aiml')).aimlVideo(
+                modelId.split(':')[2] ?? 'video-01',
+                modelId.split(':')[1] ?? 'minimax'
+              ),
+              getCost: () => 0,
+            },
+          ],
+        } as any
+      : undefined);
 
     if (!model) {
       throw new Error('Model not found');
@@ -63,15 +83,15 @@ export const generateVideoAction = async ({
     const url = await provider.model.generate({
       prompt: promptEn,
       imagePrompt: firstFrameImage,
-      duration: 5,
-      aspectRatio: '16:9',
+      duration,
+      aspectRatio,
     });
 
     const response = await fetch(url);
     const arrayBuffer = await response.arrayBuffer();
 
     {
-      const usd = provider.getCost({ duration: 5 })
+      const usd = provider.getCost({ duration })
       const credits = usd * 200
       await trackCreditUsage({ action: 'generate_video', cost: credits })
     }
