@@ -247,15 +247,19 @@ export const ImageTransform = ({
       },
     ];
 
-    // Decide size options: use model sizes or fallback for AIML dynamic non-edit
+    // Decide size options: use model sizes or fallback for AIML dynamic
     const isDynamicAimlSelected = typeof modelId === 'string' && modelId.startsWith('aiml:');
     const dynamicId = isDynamicAimlSelected ? modelId.split(':').slice(-1)[0] : '';
-    const dynamicIsEdit = isDynamicAimlSelected && dynamicId.includes('edit');
+    const dynIsBytedanceV4 = isDynamicAimlSelected && (dynamicId.startsWith('bytedance/seedream-v4-text-to-image') || dynamicId.startsWith('bytedance/seedream-v4-edit'));
+    const dynIsUSO = isDynamicAimlSelected && dynamicId.startsWith('bytedance/uso');
+    const dynamicNeedsPresets = dynIsBytedanceV4 || dynIsUSO;
     const sizeOptions = selectedModel?.sizes && selectedModel.sizes.length
       ? selectedModel.sizes
-      : (isDynamicAimlSelected && !dynamicIsEdit
+      : (isDynamicAimlSelected && dynamicNeedsPresets
           ? ['1024x1024', '1024x1536', '1536x1024', '1024x768', '768x1024']
-          : []);
+          : (isDynamicAimlSelected && !dynamicNeedsPresets
+              ? ['1024x1024', '1024x1536', '1536x1024', '1024x768', '768x1024']
+              : []));
 
     if (sizeOptions.length) {
       items.push({
