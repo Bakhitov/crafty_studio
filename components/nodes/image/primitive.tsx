@@ -234,21 +234,6 @@ export const ImagePrimitive = ({
             >
               <span className="text-[11px]">Edit</span>
             </button>
-            <button
-              type="button"
-              title="Удалить"
-              className="pointer-events-auto inline-flex items-center justify-center rounded-md bg-background/80 p-1.5 text-[11px] text-destructive ring-1 ring-destructive/30 shadow hover:bg-background"
-              onClick={(e) => {
-                e.stopPropagation();
-                // Удаление узла
-                const { deleteElements } = require('@xyflow/react');
-                // В контексте ноды проще отправить событие
-                const ev = new CustomEvent('image-node:delete', { detail: { id } });
-                window.dispatchEvent(ev);
-              }}
-            >
-              <span className="text-[11px]">Del</span>
-            </button>
           </div>
           {Boolean((data as any)?.annotationState) && (
             <div className="absolute inset-0 pointer-events-none">
