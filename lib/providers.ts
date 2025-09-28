@@ -1,42 +1,29 @@
 import type { PriceBracket } from '@/providers/gateway/client';
+import { BlackForestLabsIcon, HumeIcon, LmntIcon, MoonshotAiIcon, MorphIcon, InceptionIcon, OpenAiIcon, UnknownIcon, ArkIcon } from './icons';
+import { BasetenIcon, CerebrasIcon, DeepinfraIcon, FalIcon, NovitaIcon, VercelIcon } from './icons';
 import {
-  AlibabaCloudIcon,
-  AmazonBedrockIcon,
-  AmazonIcon,
-  AnthropicIcon,
-  AzureIcon,
-  BasetenIcon,
-  BlackForestLabsIcon,
-  CerebrasIcon,
-  CohereIcon,
-  DeepSeekIcon,
-  DeepinfraIcon,
-  FalIcon,
-  FireworksIcon,
-  GoogleIcon,
-  GroqIcon,
-  HumeIcon,
-  InceptionIcon,
-  KlingIcon,
-  LmntIcon,
-  LumaIcon,
-  MetaIcon,
-  MinimaxIcon,
-  MistralIcon,
-  MoonshotAiIcon,
-  MorphIcon,
-  NovitaIcon,
-  OpenAiIcon,
-  PerplexityIcon,
-  ReplicateIcon,
-  RunwayIcon,
-  TogetherIcon,
-  UnknownIcon,
-  VercelIcon,
-  XaiIcon,
-  ZaiIcon,
-  ArkIcon,
-} from './icons';
+  AlibabaCloudColorIcon,
+  AmazonColorIcon,
+  AzureColorIcon,
+  BedrockColorIcon,
+  MinimaxColorIcon,
+  LumaColorIcon,
+  RunwayColorIcon,
+  ReplicateColorIcon,
+  KlingColorIcon,
+  CohereColorIcon,
+  DeepseekColorIcon,
+  GroqColorIcon,
+  GoogleColorIcon,
+  MetaColorIcon,
+  XaiColorIcon,
+  TogetherColorIcon,
+  PerplexityColorIcon,
+  VertexAiColorIcon,
+  ZaiColorIcon,
+  MistralColorIcon,
+  FireworksColorIcon,
+} from './icons-vendors';
 import { MinimaxColorIcon, LumaColorIcon, RunwayColorIcon, ReplicateColorIcon, KlingColorIcon } from './icons-vendors';
 
 export type CraftyProvider = {
@@ -59,22 +46,22 @@ export const providers = {
   google: {
     id: 'google',
     name: 'Google',
-    icon: GoogleIcon,
+    icon: GoogleColorIcon as unknown as typeof OpenAiIcon,
   },
   vertex: {
     id: 'vertex',
     name: 'Vertex',
-    icon: GoogleIcon,
+    icon: VertexAiColorIcon as unknown as typeof OpenAiIcon,
   },
   meta: {
     id: 'meta',
     name: 'Meta',
-    icon: MetaIcon,
+    icon: MetaColorIcon as unknown as typeof OpenAiIcon,
   },
   xai: {
     id: 'xai',
     name: 'xAI',
-    icon: XaiIcon,
+    icon: XaiColorIcon as unknown as typeof OpenAiIcon,
   },
   vercel: {
     id: 'vercel',
@@ -84,12 +71,12 @@ export const providers = {
   groq: {
     id: 'groq',
     name: 'Groq',
-    icon: GroqIcon,
+    icon: GroqColorIcon as unknown as typeof OpenAiIcon,
   },
   mistral: {
     id: 'mistral',
     name: 'Mistral',
-    icon: MistralIcon,
+    icon: MistralColorIcon as unknown as typeof OpenAiIcon,
   },
   luma: {
     id: 'luma',
@@ -109,7 +96,7 @@ export const providers = {
   cohere: {
     id: 'cohere',
     name: 'Cohere',
-    icon: CohereIcon,
+    icon: CohereColorIcon as unknown as typeof OpenAiIcon,
   },
   lmnt: {
     id: 'lmnt',
@@ -124,7 +111,7 @@ export const providers = {
   deepseek: {
     id: 'deepseek',
     name: 'DeepSeek',
-    icon: DeepSeekIcon,
+    icon: DeepseekColorIcon as unknown as typeof OpenAiIcon,
   },
   runway: {
     id: 'runway',
@@ -134,22 +121,22 @@ export const providers = {
   together: {
     id: 'together',
     name: 'Together',
-    icon: TogetherIcon,
+    icon: TogetherColorIcon as unknown as typeof OpenAiIcon,
   },
   alibaba: {
     id: 'alibaba',
     name: 'Alibaba Cloud',
-    icon: AlibabaCloudIcon,
+    icon: AlibabaCloudColorIcon as unknown as typeof OpenAiIcon,
   },
   bedrock: {
     id: 'bedrock',
     name: 'Amazon Bedrock',
-    icon: AmazonBedrockIcon,
+    icon: BedrockColorIcon as unknown as typeof OpenAiIcon,
   },
   amazon: {
     id: 'amazon',
     name: 'Amazon',
-    icon: AmazonIcon,
+    icon: AmazonColorIcon as unknown as typeof OpenAiIcon,
   },
   cerebras: {
     id: 'cerebras',
@@ -169,7 +156,7 @@ export const providers = {
   fireworks: {
     id: 'fireworks',
     name: 'Fireworks',
-    icon: FireworksIcon,
+    icon: FireworksColorIcon as unknown as typeof OpenAiIcon,
   },
   kling: {
     id: 'kling',
