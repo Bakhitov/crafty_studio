@@ -8,7 +8,7 @@ import { handleError } from '@/lib/error/handle';
 import { uploadFile } from '@/lib/upload';
 import { useProject } from '@/providers/project';
 import { useReactFlow } from '@xyflow/react';
-import { Loader2Icon } from 'lucide-react';
+import { Loader2Icon, DownloadIcon } from 'lucide-react';
 import Image from 'next/image';
 import { ImageZoom } from '@/components/ui/kibo-ui/image-zoom';
 import dynamic from 'next/dynamic';
@@ -177,7 +177,7 @@ export const ImagePrimitive = ({
             root.render(React.createElement(Overlay));
           }}
         >
-          Edit
+          <FiEdit2 className="size-3.5" />
         </Button>
       ),
     },
@@ -194,7 +194,7 @@ export const ImagePrimitive = ({
         </Skeleton>
       )}
       {!isUploading && data.content && (
-        <div className="relative">
+        <div className="relative group">
           <ImageZoom>
             <Image
               src={data.content.url}
@@ -202,22 +202,22 @@ export const ImagePrimitive = ({
               width={data.width ?? 1000}
               height={data.height ?? 1000}
               className="h-auto w-full"
+              key={data.content.url}
             />
           </ImageZoom>
           {/* overlay actions like gallery */}
-          <div className="pointer-events-none absolute right-2 top-2 z-10 flex gap-1 opacity-100">
+          <div className="pointer-events-none absolute right-2 top-2 z-10 flex gap-1 opacity-0 transition group-hover:opacity-100">
             <button
               type="button"
               title="Скачать"
               className="pointer-events-auto inline-flex items-center justify-center rounded-md bg-background/80 p-1.5 text-[11px] shadow hover:bg-background"
               onClick={(e) => {
                 e.stopPropagation();
-                const name = (data as any)?.generated?.url ? 'image.png' : 'image.png';
-                const { download } = require('@/lib/download');
+                const name = 'image.png';
                 download({ url: data.content!.url, type: data.content!.type }, name, 'bin');
               }}
             >
-              <span className="text-[11px]">DL</span>
+              <DownloadIcon className="size-3.5" />
             </button>
             <button
               type="button"
@@ -232,7 +232,7 @@ export const ImagePrimitive = ({
                 window.dispatchEvent(ev);
               }}
             >
-              <span className="text-[11px]">Edit</span>
+              <FiEdit2 className="size-3.5" />
             </button>
           </div>
           {Boolean((data as any)?.annotationState) && (

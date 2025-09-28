@@ -7,6 +7,7 @@ import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { XIcon, FileIcon, DownloadIcon, Trash2Icon, CheckIcon } from 'lucide-react';
+import { FiEdit2 } from 'react-icons/fi';
 import { deleteUserFile } from '@/app/actions/image/delete-file';
 import Image from 'next/image';
 import { listUserFiles, type UserFile } from '@/app/actions/image/list-files';
@@ -429,7 +430,7 @@ const GalleryButton = ({
                                             setEditorFile(file);
                                           }}
                                         >
-                                          Edit
+                                          <FiEdit2 className="size-3.5" />
                                         </button>
                                       )}
                                       <button
