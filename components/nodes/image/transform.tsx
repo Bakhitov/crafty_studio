@@ -21,9 +21,9 @@ import {
   ChevronRightIcon,
   DownloadIcon,
   HelpCircleIcon,
-  Dice1Icon,
   X as XSmallIcon,
 } from 'lucide-react';
+import { FaRandom } from 'react-icons/fa';
 import Image from 'next/image';
 import { ImageZoom } from '@/components/ui/kibo-ui/image-zoom';
 import {
@@ -277,9 +277,9 @@ export const ImageTransform = ({
         <div className="flex items-center gap-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="text-xs text-muted-foreground">Seed</span>
+              <span className="text-xs text-muted-foreground">Зерно</span>
             </TooltipTrigger>
-            <TooltipContent>Фиксированный Seed даёт повторяемый результат.</TooltipContent>
+            <TooltipContent>Фиксированное зерно даёт повторяемый результат.</TooltipContent>
           </Tooltip>
           <Input
             value={typeof data.seed === 'number' ? String(data.seed) : ''}
@@ -288,7 +288,7 @@ export const ImageTransform = ({
               const next = raw === '' ? undefined : Number(raw);
               updateNodeData(id, { seed: Number.isFinite(next as number) ? next : undefined });
             }}
-            placeholder="random"
+            placeholder="случайно"
             className="w-[120px] rounded-full"
             type="number"
             min={1}
@@ -300,11 +300,12 @@ export const ImageTransform = ({
                 size="icon"
                 className="rounded-full"
                 onClick={() => updateNodeData(id, { seed: Math.floor(Math.random() * 2 ** 31) })}
+                aria-label="Случайное зерно"
               >
-                <Dice1Icon size={14} />
+                <FaRandom size={14} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Случайный seed</TooltipContent>
+            <TooltipContent>Случайное зерно</TooltipContent>
           </Tooltip>
           {typeof data.seed === 'number' && (
             <Tooltip>
@@ -314,11 +315,12 @@ export const ImageTransform = ({
                   size="icon"
                   className="rounded-full"
                   onClick={() => updateNodeData(id, { seed: undefined })}
+                  aria-label="Очистить зерно"
                 >
                   <XSmallIcon size={14} />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Очистить seed</TooltipContent>
+              <TooltipContent>Очистить зерно</TooltipContent>
             </Tooltip>
           )}
         </div>
