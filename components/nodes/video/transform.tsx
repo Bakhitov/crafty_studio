@@ -17,7 +17,7 @@ import {
   PlayIcon,
   RotateCcwIcon,
 } from 'lucide-react';
-import { type ChangeEventHandler, type ComponentProps, useState } from 'react';
+import { type ChangeEventHandler, type ComponentProps, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { mutate } from 'swr';
 import type { VideoNodeProps } from '.';
@@ -49,6 +49,11 @@ export const VideoTransform = ({
   const project = useProject();
   const modelId = data.model ?? getDefaultModel(videoModels);
   const analytics = useAnalytics();
+  const [aimlVideoModels, setAimlVideoModels] = useState<
+    { id: string; name: string; developer: string }[]
+  >([]);
+  const duration = data.duration ?? 5;
+  const aspectRatio = data.aspectRatio ?? '16:9';
 
   const handleGenerate = async () => {
     if (loading || !project?.id) {
@@ -147,6 +152,8 @@ export const VideoTransform = ({
           images: images.slice(0, 1),
           nodeId: id,
           projectId: project.id,
+          duration,
+          aspectRatio,
         });
 
         if ('error' in response) {
@@ -175,24 +182,75 @@ export const VideoTransform = ({
       children: (
         <ModelSelector
           value={modelId}
-          options={Object.fromEntries(
-            Object.entries(videoModels).map(([key, model]) => {
+          options={useMemo(() => {
+            const baseEntries = Object.entries(videoModels).map(([key, model]) => {
               const isArk = model.chef.id === 'ark';
-              const disabled = !isArk;
+              const isAiml = model.chef.id === 'aiml';
+              const disabled = !isArk && !isAiml;
               return [
                 key,
                 {
                   ...model,
                   disabled,
-                  label: disabled ? `${model.label} (скоро)` : model.label,
+                  label: disabled ? `${model.label} (недоступно)` : model.label,
                 },
-              ];
-            })
-          )}
-          key={id}
+              ] as const;
+            });
+
+            const dynamicAiml = aimlVideoModels.map((m) => {
+              const key = `aiml:${m.developer}:${m.id}`;
+              const base = videoModels['aiml-minimax-video-01'];
+              return [
+                key,
+                {
+                  ...(base ?? { label: m.name, chef: { id: 'aiml', name: 'AIML', icon: () => null }, providers: [] as any }),
+                  label: m.name,
+                },
+              ] as const;
+            });
+
+            return Object.fromEntries([...baseEntries, ...dynamicAiml]);
+          }, [aimlVideoModels])}
           className="w-[200px] rounded-full"
           onChange={(value) => updateNodeData(id, { model: value })}
         />
+      ),
+    },
+    {
+      children: (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="rounded-full px-3"
+            onClick={() => updateNodeData(id, { duration: Math.max(2, Math.min(10, duration - 1)) })}
+          >
+            -
+          </Button>
+          <span className="text-xs text-muted-foreground">{duration}s</span>
+          <Button
+            variant="outline"
+            className="rounded-full px-3"
+            onClick={() => updateNodeData(id, { duration: Math.max(2, Math.min(10, duration + 1)) })}
+          >
+            +
+          </Button>
+        </div>
+      ),
+    },
+    {
+      children: (
+        <div className="flex items-center gap-1">
+          {['16:9', '9:16', '1:1'].map((ratio) => (
+            <Button
+              key={ratio}
+              variant={aspectRatio === ratio ? 'default' : 'outline'}
+              className="rounded-full px-3"
+              onClick={() => updateNodeData(id, { aspectRatio: ratio })}
+            >
+              {ratio}
+            </Button>
+          ))}
+        </div>
       ),
     },
     loading
@@ -244,6 +302,32 @@ export const VideoTransform = ({
   const handleInstructionsChange: ChangeEventHandler<HTMLTextAreaElement> = (
     event
   ) => updateNodeData(id, { instructions: event.target.value });
+
+  // Fetch AIML video models
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const res = await fetch('/api/aiml/video-models', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          data?: Array<{ id: string; type: string; info?: { developer?: string; name?: string } }>;
+        };
+        const list = (json.data ?? [])
+          .filter((m) => m.type === 'video')
+          .map((m) => ({
+            id: m.id,
+            name: m.info?.name ?? m.id,
+            developer: m.info?.developer ?? 'aiml',
+          }));
+        if (!cancelled) setAimlVideoModels(list);
+      } catch {}
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <NodeLayout id={id} data={data} type={type} title={title} toolbar={toolbar}>

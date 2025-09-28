@@ -53,12 +53,15 @@ export const aimlVideo = (modelId: string, vendor: string = 'minimax'): VideoMod
 
     const startedAt = Date.now();
     const maxWaitMs = 5 * 60 * 1000; // 5 minutes
+    let attempt = 0;
 
     // Poll until completed
     // Note: tokens are consumed on the generation (POST) step only per docs
     // The GET step retrieves result without extra token usage
     for (;;) {
-      await new Promise((r) => setTimeout(r, 2000));
+      const delayMs = Math.min(2000 * Math.pow(1.4, attempt), 10000);
+      attempt += 1;
+      await new Promise((r) => setTimeout(r, delayMs));
 
       const url = new URL(baseUrl);
       url.searchParams.set('generation_id', generationId);

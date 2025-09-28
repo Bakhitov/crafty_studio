@@ -18,6 +18,8 @@ export type VideoNodeProps = {
     instructions?: string;
     width?: number;
     height?: number;
+    duration?: number;
+    aspectRatio?: string;
   };
   id: string;
 };

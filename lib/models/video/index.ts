@@ -18,7 +18,7 @@ export type VideoModel = {
   generate: (props: {
     prompt: string;
     imagePrompt: string | undefined;
-    duration: 5;
+    duration: number;
     aspectRatio: string;
   }) => Promise<string>;
 };
