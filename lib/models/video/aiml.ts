@@ -19,12 +19,27 @@ const BASE_ROOT = 'https://api.aimlapi.com/v2/generate/video';
 export const aimlVideo = (modelId: string, vendor: string = 'minimax'): VideoModel => ({
   modelId,
   generate: async ({ prompt, imagePrompt }) => {
-    const baseUrl = `${BASE_ROOT}/${vendor}/generation`;
-    const createPayload = {
+    const vendorPath = (vendor ?? 'minimax').toLowerCase();
+    const baseUrl = `${BASE_ROOT}/${vendorPath}/generation`;
+
+    const vendorLower = vendorPath;
+    const createPayload: Record<string, unknown> = {
       model: modelId,
       prompt,
-      ...(imagePrompt ? { first_frame_image: imagePrompt } : {}),
-    } as const;
+    };
+
+    if (imagePrompt) {
+      if (vendorLower === 'minimax') {
+        // MiniMax expects first_frame_image
+        createPayload.first_frame_image = imagePrompt;
+      } else if (vendorLower === 'pixverse') {
+        // Pixverse expects image_url
+        createPayload.image_url = imagePrompt;
+      } else {
+        // Fallback to first_frame_image for other vendors unless specified otherwise
+        createPayload.first_frame_image = imagePrompt;
+      }
+    }
 
     const createRes = await fetch(baseUrl, {
       method: 'POST',

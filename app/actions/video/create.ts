@@ -68,16 +68,7 @@ export const generateVideoAction = async ({
 
     const provider = model.providers[0];
 
-    let firstFrameImage = images.at(0)?.url;
-
-    if (firstFrameImage && process.env.NODE_ENV !== 'production') {
-      const response = await fetch(firstFrameImage);
-      const blob = await response.blob();
-      const uint8Array = new Uint8Array(await blob.arrayBuffer());
-      const base64 = Buffer.from(uint8Array).toString('base64');
-
-      firstFrameImage = `data:${images.at(0)?.type};base64,${base64}`;
-    }
+    const firstFrameImage = images.at(0)?.url;
 
     const promptEn = (await translateToEnglish(prompt)) ?? prompt;
     const url = await provider.model.generate({
