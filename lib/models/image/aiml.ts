@@ -124,6 +124,7 @@ export const aiml = {
       const isRecraftV3 = modelId.startsWith('recraft-v3');
       const isStableV3Medium = modelId.startsWith('stable-diffusion-v3-medium');
       const isStableV35Large = modelId.startsWith('stable-diffusion-v35-large');
+      const isTripoSR = modelId === 'triposr' || modelId.startsWith('triposr/');
 
       // Qwen base supports size; edit expects single image
       if (isQwenBase) {
@@ -133,6 +134,11 @@ export const aiml = {
 
       // Do not set generic image_url/image_urls; map per model below
       if (isQwenEdit && imageUrl) body.image = imageUrl;
+
+      // TripoSR: requires single image_url
+      if (isTripoSR && imageUrl) {
+        body.image_url = imageUrl;
+      }
 
       // Bytedance: Seedream 3.0 uses aspect_ratio (size deprecated)
       if (isSeedream3) {
@@ -248,7 +254,27 @@ export const aiml = {
         const ct = imagesMeta[0]?.content_type;
         if (typeof ct === 'string' && ct.length > 0) detectedContentType = ct;
       }
+      const meshMeta = (json as unknown as { model_mesh?: { url?: string; file_name?: string; content_type?: string } }).model_mesh;
+      if (!detectedContentType && meshMeta?.content_type) detectedContentType = meshMeta.content_type as string;
+
       const candidates = extractCandidateStrings(json);
+
+      // TripoSR: mesh-only output; no image candidates expected
+      if (isTripoSR && (!candidates || candidates.length === 0)) {
+        const meshUrl = meshMeta?.url;
+        if (typeof meshUrl === 'string' && meshUrl.length > 0) {
+          return {
+            images: [],
+            warnings: [],
+            response: {
+              timestamp: new Date(),
+              modelId,
+              headers: { 'x-mesh-url': meshUrl, 'x-mesh-file-name': meshMeta?.file_name ?? undefined, 'content-type': detectedContentType },
+            },
+          };
+        }
+        throw new Error('Triposr returned mesh output without preview image; current image node does not support 3D meshes');
+      }
 
       if (!candidates.length) {
         throw new Error('AIML response did not include image data');
