@@ -474,26 +474,15 @@ const GalleryButton = ({
       {mounted && editorFile
         ? createPortal(
             <div
-              className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70"
+              className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90"
               role="dialog"
               aria-modal="true"
               onClick={() => setEditorFile(null)}
             >
               <div
-                className="relative z-[121] w-full max-w-5xl rounded-xl bg-background p-4"
+                className="relative z-[121] h-[100vh] w-[100vw] bg-background"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="mb-2 flex items-center justify-between">
-                  <h4 className="text-sm font-medium">Редактирование изображения</h4>
-                  <button
-                    type="button"
-                    aria-label="Close editor"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-secondary hover:bg-secondary/80"
-                    onClick={() => setEditorFile(null)}
-                  >
-                    <XIcon size={16} />
-                  </button>
-                </div>
                 <ImageEditor
                   imageUrl={editorFile.url}
                   onCancel={() => setEditorFile(null)}

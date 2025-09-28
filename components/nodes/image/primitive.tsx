@@ -123,35 +123,35 @@ export const ImagePrimitive = ({
         </Dropzone>
       )}
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent className="max-w-5xl">
+        <DialogContent className="max-w-[100vw] h-[100vh] p-0">
           <DialogHeader>
-            <DialogTitle>Редактирование изображения</DialogTitle>
+            <DialogTitle className="sr-only">Редактирование изображения</DialogTitle>
           </DialogHeader>
-          {data.content?.url ? (
-            <ImageEditor
-              imageUrl={data.content.url}
-              // @ts-expect-error unknown state stored in node data
-              initialState={data.annotationState}
-              onCancel={() => setIsEditing(false)}
-              onSave={async (file, state) => {
-                try {
-                  if (!project?.id) return;
-                  const { url, type } = await uploadFile(file, 'files');
-                  updateNodeData(id, {
-                    content: { url, type },
-                    annotationState: state,
-                    updatedAt: new Date().toISOString(),
-                  });
-                  setIsEditing(false);
-                  if (typeof window !== 'undefined') {
-                    window.dispatchEvent(new Event('user-files:changed'));
+          <div className="h-full w-full">
+            {data.content?.url ? (
+              <ImageEditor
+                imageUrl={data.content.url}
+                onCancel={() => setIsEditing(false)}
+                onSave={async (file, state) => {
+                  try {
+                    if (!project?.id) return;
+                    const { url, type } = await uploadFile(file, 'files');
+                    updateNodeData(id, {
+                      content: { url, type },
+                      annotationState: state,
+                      updatedAt: new Date().toISOString(),
+                    });
+                    setIsEditing(false);
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new Event('user-files:changed'));
+                    }
+                  } catch (e) {
+                    handleError('Error saving edited image', e);
                   }
-                } catch (e) {
-                  handleError('Error saving edited image', e);
-                }
-              }}
-            />
-          ) : null}
+                }}
+              />
+            ) : null}
+          </div>
         </DialogContent>
       </Dialog>
     </NodeLayout>

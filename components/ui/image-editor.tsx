@@ -92,8 +92,47 @@ export function ImageEditor({ imageUrl, initialState, onSave, onCancel, classNam
 
 	return (
 		<div className={className}>
-			<div className="mb-2 flex items-center justify-between gap-2">
-				<div className="text-sm text-muted-foreground">Редактор изображения</div>
+			<div className="flex items-center justify-between gap-2 px-4 py-2 border-b">
+				<div className="flex items-center gap-2">
+					<span className="text-sm text-muted-foreground">Редактор изображения</span>
+					<div className="ml-4 flex items-center gap-1">
+						<button
+							type="button"
+							className="inline-flex h-8 items-center justify-center rounded-full bg-secondary px-3 text-xs"
+							onClick={() => markerAreaRef.current?.createMarker?.('RectangleMarker')}
+						>
+							Прямоугольник
+						</button>
+						<button
+							type="button"
+							className="inline-flex h-8 items-center justify-center rounded-full bg-secondary px-3 text-xs"
+							onClick={() => markerAreaRef.current?.createMarker?.('EllipseMarker')}
+						>
+							Эллипс
+						</button>
+						<button
+							type="button"
+							className="inline-flex h-8 items-center justify-center rounded-full bg-secondary px-3 text-xs"
+							onClick={() => markerAreaRef.current?.createMarker?.('ArrowMarker')}
+						>
+							Стрелка
+						</button>
+						<button
+							type="button"
+							className="inline-flex h-8 items-center justify-center rounded-full bg-secondary px-3 text-xs"
+							onClick={() => markerAreaRef.current?.createMarker?.('TextMarker')}
+						>
+							Текст
+						</button>
+						<button
+							type="button"
+							className="inline-flex h-8 items-center justify-center rounded-full bg-secondary px-3 text-xs"
+							onClick={() => markerAreaRef.current?.createMarker?.('FreehandMarker')}
+						>
+							Кисть
+						</button>
+					</div>
+				</div>
 				<div className="flex items-center gap-2">
 					<button
 						type="button"
@@ -113,9 +152,9 @@ export function ImageEditor({ imageUrl, initialState, onSave, onCancel, classNam
 				</div>
 			</div>
 			{error ? (
-				<div className="text-xs text-destructive">{error}</div>
+				<div className="px-4 py-2 text-xs text-destructive">{error}</div>
 			) : null}
-			<div ref={containerRef} className="h-[70vh] w-full overflow-hidden rounded-md border" />
+			<div ref={containerRef} className="h-[calc(100vh-56px)] w-full overflow-hidden" />
 		</div>
 	);
 }
