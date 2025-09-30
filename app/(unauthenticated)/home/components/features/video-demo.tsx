@@ -7,7 +7,7 @@ const nodes: Node[] = [
     type: 'text',
     position: { x: 0, y: 0 },
     data: {
-      text: 'Парень неожиданно целует девушку',
+      text: 'Мбаппе фотографируется с девушкой в синем платье',
       content: {
         type: 'doc',
         content: [
@@ -16,7 +16,7 @@ const nodes: Node[] = [
             content: [
               {
                 type: 'text',
-                text: 'Парень неожиданно целует девушку',
+                text: 'Мбаппе фотографируется с девушкой в синем платье',
               },
             ],
           },
@@ -45,7 +45,7 @@ const nodes: Node[] = [
         url: '/demo/boy-girl.mp4',
         type: 'video/mp4',
       },
-      instructions: 'Атмосфера видео лёгкая и живая, как из кино: солнечный день',
+      instructions: 'Позируют вместе на фоне ресторана Аул гурме',
     },
     origin: [0, 0.5],
   },

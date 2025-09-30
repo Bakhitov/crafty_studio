@@ -108,9 +108,9 @@ export const Features = () => (
             <ImageFromPhotoDemo />
           </div>
           <div className="grid gap-2">
-            <h3 className="font-medium text-xl sm:text-2xl">Создавайте изображения по исходным фотографиям</h3>
+            <h3 className="font-medium text-xl sm:text-2xl">Редактируйте изображения по фотографиям</h3>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Генерируйте визуалы и вариации по исходным фотографиям.
+              Редактируйте визуалы и вариации по фотографиям.
             </p>
           </div>
 
@@ -120,9 +120,9 @@ export const Features = () => (
             <ImageCombineDemo />
           </div>
           <div className="grid gap-2">
-            <h3 className="font-medium text-xl sm:text-2xl">Комбинируйте изображения по исходным фотографиям</h3>
+            <h3 className="font-medium text-xl sm:text-2xl">Соединяйте и редактируйте изображения </h3>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Комбинируйте изображения и генерируйте новые визуалы по исходным фотографиям.
+              Соединяйте и редактируйте визуалы и вариации по фотографиям.
             </p>
           </div>
         </div>

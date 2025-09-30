@@ -56,10 +56,10 @@ export const Hero = ({ currentPlan, authenticated, manualBilling }: HeroProps) =
   const [contactOpen, setContactOpen] = useState(false);
 
   const tokenPacks = [
-    { credits: 500, price: 13 },
-    { credits: 1000, price: 25 },
-    { credits: 1500, price: 38 },
-    { credits: 2000, price: 49 },
+    { credits: 500, price: 3990 },
+    { credits: 1000, price: 5990 },
+    { credits: 1500, price: 7990 },
+    { credits: 2000, price: 9990 },
   ];
 
   const plans = useMemo(() => {
@@ -96,8 +96,8 @@ export const Hero = ({ currentPlan, authenticated, manualBilling }: HeroProps) =
       icon: FlowerIcon,
       name: 'Про',
       description: 'Для профессионального использования или небольших команд.',
-      monthlyPrice: 49,
-      yearlyPrice: 39,
+      monthlyPrice: 9990,
+      yearlyPrice: 7990,
       features: [
         {
           label: '2000 кредитов / месяц',
@@ -303,14 +303,7 @@ export const Hero = ({ currentPlan, authenticated, manualBilling }: HeroProps) =
                   {plan.monthlyPrice > 0 && (
                     <div className="mb-4">
                       <span className="font-medium text-3xl tracking-tight">
-                        <NumberFlow
-                          value={yearly ? plan.yearlyPrice : plan.monthlyPrice}
-                          format={{
-                            currency: 'USD',
-                            style: 'currency',
-                            maximumFractionDigits: 0,
-                          }}
-                        />
+                        {(yearly ? plan.yearlyPrice : plan.monthlyPrice).toLocaleString('ru-RU')}₸
                       </span>
                       <span className="text-muted-foreground">
                         /мес., оплата {yearly ? 'ежегодно' : 'ежемесячно'}
@@ -401,10 +394,7 @@ export const Hero = ({ currentPlan, authenticated, manualBilling }: HeroProps) =
                         <CoinsIcon size={16} className="text-primary" />
                       </div>
                       <span className="text-3xl font-semibold tracking-tight">
-                        <NumberFlow
-                          value={pack.price}
-                          format={{ currency: 'USD', style: 'currency', maximumFractionDigits: 0 }}
-                        />
+                        {pack.price.toLocaleString('ru-RU')}₸
                       </span>
                     </div>
                     <CardTitle className="mt-4 font-medium text-xl">

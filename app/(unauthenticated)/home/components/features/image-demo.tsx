@@ -7,7 +7,7 @@ const nodes: Node[] = [
     type: 'text',
     position: { x: 0, y: 0 },
     data: {
-      text: 'Девушка (казашка) в летнем вечернем цветочном платье в спокойном городском фоне',
+      text: 'Девушка (казашка) в национальном вечернем  платье перед рестораном Аул гурме',
       content: {
         type: 'doc',
         content: [
@@ -16,7 +16,7 @@ const nodes: Node[] = [
             content: [
               {
                 type: 'text',
-                text: 'Девушка (казашка) в летнем вечернем цветочном платье в спокойном городском фоне',
+                text: 'Девушка (казашка) в национальном вечернем  платье ',
               },
             ],
           },
@@ -31,10 +31,10 @@ const nodes: Node[] = [
     data: {
       model: 'seedream-4-0-250828',
       generated: {
-        url: '/demo/girl.jpg',
-        type: 'image/jpeg',
+        url: '/demo/girl.png',
+        type: 'image/png',
       },
-      instructions: 'Девушкой идет по городу.',
+      instructions: 'Городской фон, сзади ресторан Аул гурме.',
     },
     origin: [0, 0.5],
   },

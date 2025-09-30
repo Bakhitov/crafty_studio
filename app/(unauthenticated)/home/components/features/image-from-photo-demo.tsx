@@ -8,8 +8,8 @@ const nodes: Node[] = [
     position: { x: 0, y: 20 },
     data: {
       content: {
-        url: '/demo/girl.jpg',
-        type: 'image/jpeg',
+        url: '/demo/girl.png',
+        type: 'image/png',
       },
       description: 'Пример исходной фотографии',
     },
@@ -21,9 +21,9 @@ const nodes: Node[] = [
     position: { x: 600, y: 20 },
     data: {
       model: 'seedream-4-0-250828',
-      instructions: 'Изменить платье на синее',
+      instructions: 'Изменить на синее платье и красную сумочку',
       generated: {
-        url: '/demo/girl-blue.png',
+        url: '/demo/blue.png',
         type: 'image/png',
       },
       size: '1024x1024',

@@ -8,7 +8,7 @@ const nodes: Node[] = [
     position: { x: 0, y: 0 },
     data: {
       content: {
-        url: '/demo/girl-blue.png',
+        url: '/demo/blue.png',
         type: 'image/png',
       },
       description: 'Фото A',
@@ -21,8 +21,8 @@ const nodes: Node[] = [
     position: { x: 0, y: 220 },
     data: {
       content: {
-        url: '/demo/boy.jpeg',
-        type: 'image/jpeg',
+        url: '/demo/boy.png',
+        type: 'image/png',
       },
       description: 'Фото B',
     },
@@ -34,7 +34,7 @@ const nodes: Node[] = [
     position: { x: 600, y: 110 },
     data: {
       model: 'seedream-4-0-250828',
-      instructions: 'Парень и девушка идут вместе',
+      instructions: 'Фото с Мбаппе и девушкой в синем платье вместе',
       generated: {
         url: '/demo/boy-girl.png',
         type: 'image/png',
