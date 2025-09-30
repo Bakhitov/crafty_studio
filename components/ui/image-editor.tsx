@@ -21,6 +21,13 @@ export function ImageEditor({ imageUrl, initialState, onSave, onCancel, classNam
 
 	useEffect(() => {
 		let cancelled = false;
+		const keydown = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') {
+				try { onCancel(); } catch {}
+			}
+		};
+		window.addEventListener('keydown', keydown);
+
 		(async () => {
 			try {
 				setError(null);
@@ -47,15 +54,15 @@ export function ImageEditor({ imageUrl, initialState, onSave, onCancel, classNam
 					containerRef.current.appendChild(editor);
 				}
 
-				// Load previous state if provided (method availability may vary across UI builds)
-				if (initialState) {
-					try {
-						(editor as any).show?.(initialState as never);
-					} catch {}
-				}
+				// Show editor (with or without state) if method exists
+				try {
+					if ((editor as any).show) {
+						if (typeof initialState !== 'undefined') (editor as any).show(initialState as never);
+						else (editor as any).show();
+					}
+				} catch {}
 
-				// Wire save event
-				editor.addEventListener('editorsave', async (event: any) => {
+				const handleSave = async (event: any) => {
 					try {
 						const dataUrl: string | undefined = event?.detail?.dataUrl;
 						const state = event?.detail?.state ?? {};
@@ -64,31 +71,43 @@ export function ImageEditor({ imageUrl, initialState, onSave, onCancel, classNam
 						const outBlob = await res.blob();
 						const file = new File([outBlob], `edited-${Date.now()}.png`, { type: 'image/png' });
 						await onSave(file, state);
+						// Ensure the overlay closes after successful save
+						try { onCancel(); } catch {}
 					} catch (e) {
 						setError((e as Error).message);
 					}
-				});
+				};
 
-				// Wire close/cancel events to propagate onCancel
-				editor.addEventListener('editorclose', () => {
-					try { onCancel(); } catch {}
-				});
+				const handleClose = () => { try { onCancel(); } catch {} };
+
+				// Wire save/close events (support multiple event names across versions)
+				editor.addEventListener('editorsave', handleSave as EventListener);
+				(editor as any).addEventListener('save', handleSave as EventListener);
+				editor.addEventListener('editorclose', handleClose as EventListener);
+				(editor as any).addEventListener('close', handleClose as EventListener);
 			} catch (e) {
 				setError((e as Error).message);
 			}
 		})();
 		return () => {
 			cancelled = true;
+			window.removeEventListener('keydown', keydown);
 			try {
-				if (editorRef.current && editorRef.current.parentElement) {
-					editorRef.current.parentElement.removeChild(editorRef.current);
+				if (editorRef.current) {
+					editorRef.current.removeEventListener?.('editorsave', () => {});
+					(editorRef.current as any).removeEventListener?.('save', () => {});
+					editorRef.current.removeEventListener?.('editorclose', () => {});
+					(editorRef.current as any).removeEventListener?.('close', () => {});
+					if (editorRef.current.parentElement) {
+						editorRef.current.parentElement.removeChild(editorRef.current);
+					}
 				}
 			} catch {}
 			if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
 			editorRef.current = null;
 			targetImgRef.current = null;
 		};
-	}, [imgSrc, initialState, onSave]);
+	}, [imgSrc, initialState, onSave, onCancel]);
 
 	return (
 		<div className={className}>

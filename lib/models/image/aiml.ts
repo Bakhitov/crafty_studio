@@ -1,6 +1,6 @@
 import { env } from '@/lib/env';
 
-const BASE_URL = 'https://api.aimlapi.com/v1/images/generations/';
+const BASE_URL = 'https://api.aimlapi.com/v1/images/generations';
 
 type AimlSuccessResponse = Record<string, unknown>;
 
@@ -96,7 +96,7 @@ export const aiml = {
         headers?: Record<string, string | undefined>;
       }
     ) => {
-      const { prompt, providerOptions, abortSignal, headers } = args;
+      const { prompt, size, seed, providerOptions, abortSignal, headers } = args;
       // Prepare payload with optional image_url(s) if provided via providerOptions
       let imageUrl: string | undefined;
       let imageUrls: string[] | undefined;
@@ -113,13 +113,196 @@ export const aiml = {
       }
 
       const body: Record<string, unknown> = { model: modelId, prompt };
-      if (imageUrl) body.image_url = imageUrl;
-      if (imageUrls && imageUrls.length) body.image_urls = imageUrls;
+      // Model families
+      const isQwenEdit = modelId.startsWith('alibaba/qwen-image-edit');
+      const isQwenBase = modelId.startsWith('alibaba/qwen-image') && !isQwenEdit;
+      const isSeedream3 = modelId.startsWith('bytedance/seedream-3.0');
+      const isSeededit30 = modelId.startsWith('bytedance/seededit-3.0-i2i');
+      const isSeedreamV4T2I = modelId.startsWith('bytedance/seedream-v4-text-to-image');
+      const isSeedreamV4Edit = modelId.startsWith('bytedance/seedream-v4-edit');
+      const isUSO = modelId.startsWith('bytedance/uso');
+      const isRecraftV3 = modelId.startsWith('recraft-v3');
+      const isStableV3Medium = modelId.startsWith('stable-diffusion-v3-medium');
+      const isStableV35Large = modelId.startsWith('stable-diffusion-v35-large');
+      const isTripoSR = modelId === 'triposr' || modelId.startsWith('triposr/');
+      const isDalle2 = modelId.startsWith('dall-e-2');
+      const isDalle3 = modelId.startsWith('dall-e-3');
+      const isAIMLGptImage1 = modelId.startsWith('openai/gpt-image-1');
+      const isGeminiFlashEdit = modelId.startsWith('google/gemini-2.5-flash-image-edit');
+      const isGeminiFlash = modelId.startsWith('google/gemini-2.5-flash-image') && !isGeminiFlashEdit;
+      const isImagenUltra = modelId.startsWith('google/imagen-4.0-ultra-generate-001');
+      const isImagenFast = modelId.startsWith('google/imagen-4.0-fast-generate-001');
+      const isImagenGen = modelId.startsWith('google/imagen-4.0-generate-001');
+      const isImagenUltraPreview = modelId.startsWith('imagen-4.0-ultra-generate-preview-06-06');
+      const isImagen4Preview = modelId.startsWith('google/imagen4/preview');
+      const isImagen3 = modelId.startsWith('imagen-3.0-generate-002');
+      // Flux
+      const isFluxPro = modelId === 'flux-pro' || modelId.startsWith('flux-pro/');
+      const isFluxRealism = modelId === 'flux-realism';
+      const isFluxSchnell = modelId.startsWith('flux/schnell');
+      const isFluxDev = modelId === 'flux/dev';
+      const isFluxDevI2I = modelId.startsWith('flux/dev/image-to-image');
+      const isFluxKontextProTTI = modelId.startsWith('flux/kontext-pro/text-to-image');
+      const isFluxKontextProI2I = modelId.startsWith('flux/kontext-pro/image-to-image');
+      const isFluxKontextMaxTTI = modelId.startsWith('flux/kontext-max/text-to-image');
+      const isFluxKontextMaxI2I = modelId.startsWith('flux/kontext-max/image-to-image');
+
+      // Qwen base supports size; edit expects single image
+      if (isQwenBase) {
+        if (typeof size === 'string' && size.length > 0) body.size = size;
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+
+      // Do not set generic image_url/image_urls; map per model below
+      if (isQwenEdit && imageUrl) body.image = imageUrl;
+
+      // TripoSR: requires single image_url
+      if (isTripoSR && imageUrl) {
+        body.image_url = imageUrl;
+      }
+
+      // Helper: apply image_size from numeric size
+      const applyImageSize = () => {
+        if (typeof size === 'string' && size.includes('x')) {
+          const [w, h] = size.split('x').map(Number);
+          if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) {
+            body.image_size = { width: w, height: h };
+          }
+        }
+      };
+
+      // Helper: choose aspect ratio from size
+      const applyAspectRatio = () => {
+        const choices = ['1:1', '16:9', '9:16', '3:4', '4:3', '21:9', '3:2', '2:3', '9:21'] as const;
+        const ratioMap: Record<string, number> = {
+          '1:1': 1,
+          '16:9': 16 / 9,
+          '9:16': 9 / 16,
+          '3:4': 3 / 4,
+          '4:3': 4 / 3,
+          '21:9': 21 / 9,
+          '3:2': 3 / 2,
+          '2:3': 2 / 3,
+          '9:21': 9 / 21,
+        };
+        let aspect = '1:1';
+        if (typeof size === 'string' && size.includes('x')) {
+          const [w, h] = size.split('x').map(Number);
+          if (w > 0 && h > 0) {
+            const r = w / h;
+            let best = '1:1';
+            let bestDiff = Infinity;
+            for (const k of choices) {
+              const d = Math.abs(r - (ratioMap[k] ?? 1));
+              if (d < bestDiff) {
+                best = k;
+                bestDiff = d;
+              }
+            }
+            aspect = best;
+          }
+        }
+        body.aspect_ratio = aspect;
+      };
+
+      // Google Gemini 2.5 Flash Image Edit: image_urls
+      if (isGeminiFlashEdit) {
+        const urls = (imageUrls && imageUrls.length ? imageUrls : (imageUrl ? [imageUrl] : [])).slice(0, 16);
+        if (urls.length) body.image_urls = urls;
+      }
+
+      // Google Gemini 2.5 Flash Image: aspect_ratio from size if provided
+      if (isGeminiFlash) {
+        applyAspectRatio();
+      }
+
+      // Bytedance: Seedream 3.0 uses aspect_ratio (size deprecated)
+      if (isSeedream3) {
+        applyAspectRatio();
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+        body.watermark = false;
+      }
+
+      // Bytedance: Seededit 3.0 i2i expects a single 'image'
+      if (isSeededit30 && imageUrl) {
+        body.image = imageUrl;
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+        body.watermark = false;
+      }
+
+      // Bytedance: v4 t2i/edit and USO use image_size and image_urls
+      if (isSeedreamV4T2I) {
+        applyImageSize();
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+      if (isSeedreamV4Edit) {
+        applyImageSize();
+        const urls = (imageUrls && imageUrls.length ? imageUrls : (imageUrl ? [imageUrl] : [])).slice(0, 10);
+        if (urls.length) body.image_urls = urls;
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+      if (isUSO) {
+        applyImageSize();
+        const urls = (imageUrls && imageUrls.length ? imageUrls : (imageUrl ? [imageUrl] : [])).slice(0, 3);
+        if (urls.length) body.image_urls = urls;
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+
+      // Recraft v3: image_size (object or preset), seed
+      if (isRecraftV3) {
+        applyImageSize();
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+
+      // Stable Diffusion v3 Medium / v3.5 Large: image_size, seed
+      if (isStableV3Medium || isStableV35Large) {
+        applyImageSize();
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+
+      // DALL·E: size string
+      if (isDalle2 || isDalle3 || isAIMLGptImage1) {
+        if (typeof size === 'string' && size.length > 0) body.size = size;
+      }
+
+      // Google Imagen 4 family and Imagen 3
+      if (isImagenUltra || isImagenFast || isImagenGen || isImagenUltraPreview || isImagen4Preview || isImagen3) {
+        if (!isImagenGen) applyAspectRatio();
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+        if (isImagen3) (body as Record<string, unknown>).convert_base64_to_url = true;
+      }
+
+      // Flux family
+      if (isFluxPro || isFluxRealism || isFluxDev || isFluxSchnell) {
+        // text-to-image variants use image_size
+        applyImageSize();
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+      if (isFluxDevI2I) {
+        // expects a single image_url; ignore multiples
+        const url = imageUrl ?? imageUrls?.[0];
+        if (url) body.image_url = url;
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+      if (isFluxKontextProTTI || isFluxKontextMaxTTI) {
+        // aspect ratio only
+        applyAspectRatio();
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
+      if (isFluxKontextProI2I || isFluxKontextMaxI2I) {
+        // accepts one or many image_url values; choose based on input
+        const urls = (imageUrls && imageUrls.length ? imageUrls : (imageUrl ? [imageUrl] : []));
+        if (urls.length === 1) body.image_url = urls[0];
+        else if (urls.length > 1) body.image_url = urls.slice(0, 4);
+        applyAspectRatio();
+        if (typeof seed === 'number' && Number.isFinite(seed)) body.seed = seed;
+      }
 
       const res = await fetch(BASE_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json',
           Authorization: `Bearer ${env.AIML_API_KEY}`,
           ...(headers ?? {}),
         },
@@ -138,7 +321,34 @@ export const aiml = {
       }
 
       const json = (await res.json()) as AimlSuccessResponse;
+      // Try to infer content type from structured responses
+      let detectedContentType: string | undefined;
+      const imagesMeta = (json as unknown as { images?: Array<{ content_type?: string }> }).images;
+      if (Array.isArray(imagesMeta) && imagesMeta.length > 0) {
+        const ct = imagesMeta[0]?.content_type;
+        if (typeof ct === 'string' && ct.length > 0) detectedContentType = ct;
+      }
+      const meshMeta = (json as unknown as { model_mesh?: { url?: string; file_name?: string; content_type?: string } }).model_mesh;
+      if (!detectedContentType && meshMeta?.content_type) detectedContentType = meshMeta.content_type as string;
+
       const candidates = extractCandidateStrings(json);
+
+      // TripoSR: mesh-only output; no image candidates expected
+      if (isTripoSR && (!candidates || candidates.length === 0)) {
+        const meshUrl = meshMeta?.url;
+        if (typeof meshUrl === 'string' && meshUrl.length > 0) {
+          return {
+            images: [],
+            warnings: [],
+            response: {
+              timestamp: new Date(),
+              modelId,
+              headers: { 'x-mesh-url': meshUrl, 'x-mesh-file-name': meshMeta?.file_name ?? undefined, 'content-type': detectedContentType },
+            },
+          };
+        }
+        throw new Error('Triposr returned mesh output without preview image; current image node does not support 3D meshes');
+      }
 
       if (!candidates.length) {
         throw new Error('AIML response did not include image data');
@@ -163,7 +373,7 @@ export const aiml = {
         response: {
           timestamp: new Date(),
           modelId,
-          headers: undefined,
+          headers: detectedContentType ? { 'content-type': detectedContentType } : undefined,
         },
       };
     },
